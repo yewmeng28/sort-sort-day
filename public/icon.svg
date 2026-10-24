@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#3b2a1c"/>
+  <!-- cat ears peeking over a chest -->
+  <path d="M150 210 L170 110 L238 180 Z" fill="#d9a521"/>
+  <path d="M362 210 L342 110 L274 180 Z" fill="#d9a521"/>
+  <rect x="96" y="190" width="320" height="130" rx="40" fill="#8a5a2b" stroke="#d9a521" stroke-width="12"/>
+  <rect x="96" y="300" width="320" height="130" rx="20" fill="#5a4230" stroke="#d9a521" stroke-width="12"/>
+  <rect x="226" y="270" width="60" height="70" rx="12" fill="#d9a521"/>
+  <circle cx="200" cy="245" r="12" fill="#2a1d12"/>
+  <circle cx="312" cy="245" r="12" fill="#2a1d12"/>
+</svg>
