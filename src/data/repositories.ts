@@ -1,4 +1,4 @@
-import type { BackupFile, Category, Dismissal, Item, Room, Space } from '../domain/types';
+import type { BackupFile, Category, Dismissal, Item, Progress, Room, Space } from '../domain/types';
 
 export interface Repository<T extends { id: string }> {
   list(): Promise<T[]>;
@@ -17,6 +17,12 @@ export type ItemRepository = Repository<Item>;
 export type CategoryRepository = Repository<Category>;
 export type DismissalRepository = Repository<Dismissal>;
 
+export interface ProgressRepository {
+  get(): Promise<Progress>;
+  /** Atomically transform the progress row; returning the same object skips the write. */
+  update(change: (progress: Progress) => Progress): Promise<void>;
+}
+
 export interface BackupRepository {
   exportAll(): Promise<BackupFile>;
   importAll(backup: BackupFile): Promise<void>;
@@ -28,5 +34,6 @@ export interface Repositories {
   items: ItemRepository;
   categories: CategoryRepository;
   dismissals: DismissalRepository;
+  progress: ProgressRepository;
   backup: BackupRepository;
 }

@@ -1,5 +1,5 @@
-// Renders public/icon.svg to the PNG icons iOS and the web manifest need.
-// One-off setup: npm install -D @resvg/resvg-js   then: npm run icons   (commit the PNGs it writes to public/)
+// Renders an SVG in public/ (default icon.svg) to the PNG icons iOS and the web manifest need.
+// Usage: npm run icons   or, to try another design: npm run icons -- my-draft.svg   (commit the PNGs it writes to public/)
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -12,7 +12,9 @@ try {
 }
 
 const publicDir = new URL('../public/', import.meta.url);
-const svg = readFileSync(fileURLToPath(new URL('icon.svg', publicDir)));
+const source = process.argv[2] ?? 'icon.svg';
+const svg = readFileSync(fileURLToPath(new URL(source, publicDir)));
+console.log(`rendering public/${source}`);
 
 const targets = [
   ['apple-touch-icon.png', 180],

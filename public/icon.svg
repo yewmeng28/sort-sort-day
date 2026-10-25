@@ -1,23 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- chest outline: every corner rounded to match the S -->
+    <clipPath id="chest">
+      <path d="M124 116 H388 A28 28 0 0 1 416 144 V372 A28 28 0 0 1 388 400 H124 A28 28 0 0 1 96 372 V144 A28 28 0 0 1 124 116 Z"/>
+    </clipPath>
+  </defs>
   <rect width="512" height="512" fill="#3b2a1c"/>
 
-  <!-- treasure chest -->
-  <path d="M70 250 Q70 130 256 130 Q442 130 442 250 Z" fill="#8a5a2b" stroke="#d9a521" stroke-width="12" stroke-linejoin="round"/>
-  <rect x="70" y="250" width="372" height="190" rx="18" fill="#6b4421" stroke="#d9a521" stroke-width="12"/>
-  <rect x="70" y="238" width="372" height="26" fill="#d9a521"/>
-  <rect x="130" y="130" width="26" height="310" fill="#d9a521" opacity="0.55"/>
-  <rect x="356" y="130" width="26" height="310" fill="#d9a521" opacity="0.55"/>
-  <rect x="226" y="236" width="60" height="64" rx="10" fill="#f0c24a" stroke="#2a1d12" stroke-width="8"/>
-  <circle cx="256" cy="262" r="8" fill="#2a1d12"/>
+  <g clip-path="url(#chest)">
+    <!-- lid and body with planks -->
+    <rect x="96" y="116" width="320" height="110" fill="#a06a34"/>
+    <rect x="96" y="226" width="320" height="174" fill="#7a4a22"/>
+    <g stroke="#55321a" stroke-width="5">
+      <line x1="96" y1="171" x2="416" y2="171"/>
+      <line x1="96" y1="284" x2="416" y2="284"/>
+      <line x1="96" y1="342" x2="416" y2="342"/>
+    </g>
 
-  <!-- stylised S ending in arrowheads: dark outline first, then gold on top -->
-  <g fill="none" stroke-linecap="butt" stroke-linejoin="round">
-    <path d="M338 118 C218 108 148 168 238 226 C326 282 352 352 174 346" stroke="#2a1d12" stroke-width="58"/>
-    <path d="M338 118 C218 108 148 168 238 226 C326 282 352 352 174 346" stroke="#f0c24a" stroke-width="36"/>
+    <!-- iron straps with rivets -->
+    <g fill="#3a3a40" stroke="#1c1c20" stroke-width="3">
+      <rect x="146" y="116" width="26" height="284"/>
+      <rect x="340" y="116" width="26" height="284"/>
+    </g>
+    <g fill="#9a9aa6">
+      <circle cx="159" cy="146" r="4"/><circle cx="159" cy="200" r="4"/>
+      <circle cx="159" cy="260" r="4"/><circle cx="159" cy="314" r="4"/><circle cx="159" cy="370" r="4"/>
+      <circle cx="353" cy="146" r="4"/><circle cx="353" cy="200" r="4"/>
+      <circle cx="353" cy="260" r="4"/><circle cx="353" cy="314" r="4"/><circle cx="353" cy="370" r="4"/>
+    </g>
   </g>
-  <!-- arrowheads at both ends (outline, then gold) -->
-  <g stroke="#2a1d12" stroke-width="14" stroke-linejoin="round" fill="#f0c24a">
-    <path d="M326 76 L398 120 L326 164 Z"/>
-    <path d="M186 304 L108 346 L186 390 Z"/>
+
+  <!-- lock plate -->
+  <rect x="222" y="242" width="68" height="74" rx="6" fill="#e0b23a" stroke="#2a1d12" stroke-width="6"/>
+  <circle cx="256" cy="270" r="8" fill="#2a1d12"/>
+  <path d="M251 274 H261 L264 298 H248 Z" fill="#2a1d12"/>
+
+  <!-- full silhouette in dark wood so the chest reads first -->
+  <path d="M124 116 H388 A28 28 0 0 1 416 144 V372 A28 28 0 0 1 388 400 H124 A28 28 0 0 1 96 372 V144 A28 28 0 0 1 124 116 Z" fill="none" stroke="#2a1d12" stroke-width="8"/>
+
+  <!-- gold trim that traces an S with soft bends and ends that curl down/up: top of the lid, left of the lid, the seam, right of the body, bottom -->
+  <g fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M416 160 V144 A28 28 0 0 0 388 116 H124 A28 28 0 0 0 96 144 V198 A28 28 0 0 0 124 226 H388 A28 28 0 0 1 416 254 V372 A28 28 0 0 1 388 400 H124 A28 28 0 0 1 96 372 V326" stroke="#2a1d12" stroke-width="30"/>
+    <path d="M416 160 V144 A28 28 0 0 0 388 116 H124 A28 28 0 0 0 96 144 V198 A28 28 0 0 0 124 226 H388 A28 28 0 0 1 416 254 V372 A28 28 0 0 1 388 400 H124 A28 28 0 0 1 96 372 V326" stroke="#e8b84a" stroke-width="20"/>
   </g>
 </svg>

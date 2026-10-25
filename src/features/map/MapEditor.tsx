@@ -15,6 +15,7 @@ import {
   unmergeSelection,
 } from '../../domain/grid';
 import { layoutLabel } from '../../domain/label';
+import { moveSpace } from '../../domain/rooms';
 import type { Cell, Item, Room, Space } from '../../domain/types';
 
 const SIZE = 60;
@@ -35,6 +36,21 @@ export function MapEditor({ room, spaces, items, highlightSpaceId, onOpenSpace }
   const [editing, setEditing] = useState(false);
   const [selection, setSelection] = useState<Cell[]>([]);
   const [drag, setDrag] = useState<{ a: Cell; b: Cell } | null>(null);
+  const [notice, setNotice] = useState('');
+
+  /** Shift the selected space (all its cells, on every layer); the selection follows it so you can keep nudging. */
+  const nudge = async (dx: number, dy: number) => {
+    const result = moveSpace(room, spaces, touching[0].id, dx, dy);
+    if (!result.ok) {
+      setNotice(result.error);
+      play('cancel');
+      return;
+    }
+    await repos.spaces.save(result.value);
+    setNotice('');
+    setSelection(result.value.cells.filter((c) => c.layer === layer));
+    play('tick');
+  };
 
   const selectedKeys = new Set(selection.map(cellKey));
   const touching = spacesTouching(spaces, selection);
@@ -71,6 +87,7 @@ export function MapEditor({ room, spaces, items, highlightSpaceId, onOpenSpace }
     const rect = cellsInRect(drag.a.x, drag.a.y, drag.b.x, drag.b.y, layer);
     const single = rect.length === 1;
     play('tick');
+    setNotice('');
     setSelection((prev) => {
       if (single && selectedKeys.has(cellKey(rect[0]))) return prev.filter((c) => cellKey(c) !== cellKey(rect[0]));
       return [...prev, ...rect.filter((c) => !selectedKeys.has(cellKey(c)))];
@@ -235,6 +252,16 @@ export function MapEditor({ room, spaces, items, highlightSpaceId, onOpenSpace }
           </label>
           <button disabled={touching.length !== 1} onClick={spanLayers}>Span layers</button>
           <button disabled={!selection.length} onClick={clearCells}>Clear</button>
+          {touching.length === 1 && (
+            <div className="row wrap move" role="group" aria-label={`Move ${touching[0].name}`}>
+              <span className="hint">Move {touching[0].name}:</span>
+              <button aria-label="Move left" onClick={() => void nudge(-1, 0)}>◀</button>
+              <button aria-label="Move up" onClick={() => void nudge(0, -1)}>▲</button>
+              <button aria-label="Move down" onClick={() => void nudge(0, 1)}>▼</button>
+              <button aria-label="Move right" onClick={() => void nudge(1, 0)}>▶</button>
+            </div>
+          )}
+          {notice && <p className="error" role="status">{notice}</p>}
         </div>
       ) : (
         <p className="hint">Tap a chest to open it. Dashed cells have storage on another layer.</p>

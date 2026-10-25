@@ -1,9 +1,12 @@
 import { useState, type ChangeEvent } from 'react';
-import { useCategories, useRepos } from '../../data/RepoContext';
+import { useAwardXp, useCategories, useRepos } from '../../data/RepoContext';
+import { Mascot } from '../../app/Mascot';
 import { isMuted, play, setMuted } from '../../app/sound';
 import { categoryNames, deleteCategory, renameCategory, type CategoryChange } from '../../domain/categories';
+import { XP } from '../../domain/progress';
 import { moveItem, sortRooms } from '../../domain/rooms';
-import type { BackupFile, Item, Room, Space } from '../../domain/types';
+import { parseBackup } from '../../domain/backup';
+import type { Item, Room, Space } from '../../domain/types';
 
 interface Props {
   rooms: Room[];
@@ -13,6 +16,7 @@ interface Props {
 
 export function DenTab({ rooms, spaces, items }: Props) {
   const repos = useRepos();
+  const awardXp = useAwardXp();
   const [muted, setMutedState] = useState(isMuted());
   const [message, setMessage] = useState('');
   const lost = items.filter((i) => i.status === 'missing' || !i.spaceId);
@@ -21,6 +25,7 @@ export function DenTab({ rooms, spaces, items }: Props) {
     const space = spaces.find((s) => s.id === spaceId);
     if (!space) return;
     await repos.items.save(moveItem(item, space, Date.now()));
+    await awardXp(XP.findItem);
     play('confirm');
   };
 
@@ -63,19 +68,22 @@ export function DenTab({ rooms, spaces, items }: Props) {
     e.target.value = '';
     if (!file || !window.confirm('Replace everything with this backup?')) return;
     try {
-      const backup = JSON.parse(await file.text()) as BackupFile;
-      if (backup.version !== 1 || !backup.rooms || !backup.spaces || !backup.items) throw new Error('Not a Sort Sort Day backup');
+      // Validate fully before importAll, which clears existing data first.
+      const backup = parseBackup(JSON.parse(await file.text()));
       await repos.backup.importAll(backup);
       setMessage('Backup restored.');
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Could not read that file.');
+      setMessage(err instanceof SyntaxError ? 'That file is not valid JSON.' : err instanceof Error ? err.message : 'Could not read that file.');
     }
   };
 
   return (
     <section className="panel">
       <h2>The Den</h2>
-      <p className="hint">Items the Melynx made off with, or that have no home yet.</p>
+      <div className="row empty">
+        <Mascot size={64} label="Bandit the cat" />
+        <p className="hint">Items Bandit the cat made off with, or that have no home yet.</p>
+      </div>
       <ul className="results">
         {lost.map((item) => (
           <li key={item.id} className="row wrap">

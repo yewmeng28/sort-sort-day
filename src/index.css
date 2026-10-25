@@ -139,3 +139,23 @@ h3 { font-family: var(--font-title); font-size: 1rem; margin: 16px 0 4px; }
 .quest { align-items: flex-start; gap: 12px; }
 .quest.cancelled { opacity: 0.6; }
 button.link { background: none; border: 0; padding: 0; min-height: 40px; text-decoration: underline; }
+
+/* progress: packing score, streak, level */
+.progress { background: #f6ecd2; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 8px 0 4px; }
+.progress .row { margin: 4px 0; }
+.stat { font-family: var(--font-title); font-size: 1.25rem; font-weight: 700; }
+.bar { position: relative; height: 14px; border-radius: 7px; background: var(--parchment-dark); border: 1px solid var(--line); overflow: hidden; }
+.bar-fill { height: 100%; background: linear-gradient(90deg, var(--leather-light), var(--gold)); transition: width 0.4s ease; }
+.bar-marker { position: absolute; top: -1px; bottom: -1px; width: 2px; background: var(--ink); transform: translateX(-1px); }
+.threshold { display: inline-flex; align-items: center; gap: 6px; }
+.threshold input { width: 72px; flex: none; min-height: 40px; }
+
+/* messages and space moving */
+.error { color: #8a2b2b; font-weight: 600; margin: 4px 0; }
+.move { width: 100%; margin: 4px 0 0; }
+.move button { min-width: 44px; justify-content: center; }
+
+/* mascot */
+h1 { display: flex; align-items: center; gap: 8px; }
+.mascot { flex: none; display: block; }
+.row.empty { justify-content: flex-start; gap: 12px; }

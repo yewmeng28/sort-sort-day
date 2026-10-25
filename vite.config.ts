@@ -11,7 +11,7 @@ export default defineConfig(({ command }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['icon.svg', 'apple-touch-icon.png', 'mascot.svg'],
       manifest: {
         name: 'Sort Sort Day',
         short_name: 'SortSortDay',

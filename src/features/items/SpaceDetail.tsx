@@ -1,7 +1,8 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { useCategories, useRepos } from '../../data/RepoContext';
+import { useAwardXp, useCategories, useRepos } from '../../data/RepoContext';
 import { play } from '../../app/sound';
 import { categoryNames } from '../../domain/categories';
+import { XP } from '../../domain/progress';
 import { spaceLayers } from '../../domain/grid';
 import { moveItem, sortRooms } from '../../domain/rooms';
 import type { Item, Room, Space } from '../../domain/types';
@@ -20,6 +21,7 @@ interface Props {
 
 export function SpaceDetail({ space, rooms, spaces, items, onClose }: Props) {
   const repos = useRepos();
+  const awardXp = useAwardXp();
   const room = rooms.find((r) => r.id === space.roomId)!;
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
@@ -62,6 +64,7 @@ export function SpaceDetail({ space, rooms, spaces, items, onClose }: Props) {
       status: 'stored',
       updatedAt: Date.now(),
     });
+    await awardXp(XP.addItem);
     play('confirm');
     setName('');
     setQty(1);
@@ -111,7 +114,11 @@ export function SpaceDetail({ space, rooms, spaces, items, onClose }: Props) {
                     value=""
                     onChange={(e) => {
                       const target = spaces.find((s) => s.id === e.target.value);
-                      if (target) { void repos.items.save(moveItem(item, target, Date.now())); play('confirm'); }
+                      if (target) {
+                        void repos.items.save(moveItem(item, target, Date.now()));
+                        void awardXp(XP.moveItem);
+                        play('confirm');
+                      }
                     }}
                   >
                     <option value="">Move to…</option>
@@ -124,7 +131,7 @@ export function SpaceDetail({ space, rooms, spaces, items, onClose }: Props) {
                     ))}
                   </select>
                   <button onClick={() => { void update(item, { status: 'missing', spaceId: null }); play('sneak'); }}>
-                    Melynx took it
+                    Bandit took it
                   </button>
                   <button onClick={() => { void repos.items.remove(item.id); play('cancel'); }}>Delete</button>
                 </div>

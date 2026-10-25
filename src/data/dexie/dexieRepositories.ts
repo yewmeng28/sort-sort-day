@@ -1,3 +1,4 @@
+import { DEFAULT_PROGRESS } from '../../domain/progress';
 import type { Repositories } from '../repositories';
 import { SortSortDayDb } from './db';
 
@@ -38,6 +39,16 @@ export function createDexieRepositories(db = new SortSortDayDb()): Repositories 
       save: async (dismissal) => void (await db.dismissedQuests.put(dismissal)),
       remove: (id) => db.dismissedQuests.delete(id),
     },
+    progress: {
+      get: async () => (await db.progress.get('main')) ?? DEFAULT_PROGRESS,
+      // Read-modify-write in one transaction so overlapping updates (e.g. XP and a streak day) don't overwrite each other.
+      update: (change) =>
+        db.transaction('rw', db.progress, async () => {
+          const current = (await db.progress.get('main')) ?? DEFAULT_PROGRESS;
+          const next = change(current);
+          if (next !== current) await db.progress.put(next);
+        }),
+    },
     backup: {
       exportAll: async () => ({
         version: 1,
@@ -47,9 +58,10 @@ export function createDexieRepositories(db = new SortSortDayDb()): Repositories 
         items: await db.items.toArray(),
         categories: await db.categories.toArray(),
         dismissed: await db.dismissedQuests.toArray(),
+        progress: await db.progress.get('main'),
       }),
       importAll: (backup) =>
-        db.transaction('rw', [db.rooms, db.spaces, db.items, db.categories, db.dismissedQuests], async () => {
+        db.transaction('rw', [db.rooms, db.spaces, db.items, db.categories, db.dismissedQuests, db.progress], async () => {
           await Promise.all([
             db.rooms.clear(),
             db.spaces.clear(),
@@ -57,6 +69,8 @@ export function createDexieRepositories(db = new SortSortDayDb()): Repositories 
             db.categories.clear(),
             db.dismissedQuests.clear(),
           ]);
+          // Backups made before XP existed have no progress; keep the current XP and streak rather than wiping them.
+          if (backup.progress) await db.progress.put(backup.progress);
           await db.rooms.bulkPut(backup.rooms);
           await db.spaces.bulkPut(backup.spaces);
           await db.items.bulkPut(backup.items);

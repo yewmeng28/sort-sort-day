@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { createDexieRepositories } from './dexie/dexieRepositories';
 import type { Repositories } from './repositories';
@@ -36,6 +36,17 @@ export const useCategories = () => {
 export const useDismissals = () => {
   const { dismissals } = useRepos();
   return useLiveQuery(() => dismissals.list(), [dismissals]);
+};
+
+export const useProgress = () => {
+  const { progress } = useRepos();
+  return useLiveQuery(() => progress.get(), [progress]);
+};
+
+/** Returns a function that adds XP. */
+export const useAwardXp = () => {
+  const { progress } = useRepos();
+  return useCallback((amount: number) => progress.update((p) => ({ ...p, xp: p.xp + amount })), [progress]);
 };
 
 export const useItems = () => {

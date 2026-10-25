@@ -54,6 +54,19 @@ export interface Dismissal {
   at: number;
 }
 
+/** XP, level and streak state. A single row, id "main". */
+export interface Progress {
+  id: 'main';
+  xp: number;
+  /** Consecutive days the packing score reached the threshold, as of `lastGoodDay`. */
+  streak: number;
+  bestStreak: number;
+  /** Local calendar day (YYYY-MM-DD) of the last day that met the threshold. */
+  lastGoodDay: string | null;
+  /** Packing score (percent) that counts towards the streak. */
+  threshold: number;
+}
+
 export interface Suggestion {
   /** Stable across runs so a cancelled quest stays cancelled. */
   id: string;
@@ -72,4 +85,5 @@ export interface BackupFile {
   /** Absent in backups made before categories existed. */
   categories?: Category[];
   dismissed?: Dismissal[];
+  progress?: Progress;
 }

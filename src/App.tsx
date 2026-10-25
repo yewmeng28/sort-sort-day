@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useItems, useRepos, useRooms, useSpaces } from './data/RepoContext';
+import { useEffect, useMemo, useState } from 'react';
+import { useDismissals, useItems, useProgress, useRepos, useRooms, useSpaces } from './data/RepoContext';
+import { allQuests, localDay, packingScore, recordDay } from './domain/progress';
+import { Mascot } from './app/Mascot';
 import { play } from './app/sound';
 import { DenTab } from './features/den/DenTab';
 import { SpaceDetail } from './features/items/SpaceDetail';
@@ -44,6 +46,8 @@ export default function App() {
   const rooms = useRooms();
   const spaces = useSpaces();
   const items = useItems();
+  const dismissed = useDismissals();
+  const threshold = useProgress()?.threshold;
   const [tab, setTab] = useState<Tab>('map');
   const [roomId, setRoomId] = useState<string | null>(readRoomId);
   const [roomsOpen, setRoomsOpen] = useState(false);
@@ -54,6 +58,19 @@ export default function App() {
   useEffect(() => {
     if (rooms && rooms.length === 0) void repos.rooms.save(DEFAULT_ROOM);
   }, [rooms, repos]);
+
+  const score = useMemo(() => {
+    if (!rooms || !spaces || !items) return undefined;
+    const cancelled = new Set((dismissed ?? []).map((d) => d.id));
+    return packingScore(items, allQuests(rooms, spaces, items), cancelled);
+  }, [rooms, spaces, items, dismissed]);
+
+  // Count today towards the streak whenever the score reaches the goal. recordDay is idempotent per day,
+  // and an empty inventory never counts.
+  useEffect(() => {
+    if (!score || score.total === 0) return;
+    void repos.progress.update((p) => recordDay(p, localDay(), score.percent));
+  }, [score, threshold, repos]);
 
   useEffect(() => {
     if (!highlightId) return;
@@ -68,7 +85,7 @@ export default function App() {
     setHighlightId(null);
   };
 
-  if (!rooms?.length || !spaces || !items) return <p className="hint center">Opening the Item Box…</p>;
+  if (!rooms?.length || !spaces || !items || !score) return <p className="hint center">Opening the Item Box…</p>;
 
   // Fall back to the first room if the remembered one no longer exists.
   const room = rooms.find((r) => r.id === roomId) ?? sortRooms(rooms)[0];
@@ -79,7 +96,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="title">
-        <h1>Sort Sort Day</h1>
+        <h1>
+          <Mascot size={34} />
+          Sort Sort Day
+        </h1>
         <button className="room-switch" aria-label="Switch room" onClick={() => { play('tick'); setRoomsOpen(true); }}>
           {room.favorite && '★ '}
           {room.name} ▾
@@ -89,7 +109,8 @@ export default function App() {
       <main>
         {tab === 'map' && (
           <MapEditor
-            key={room.id}
+            // Reset selection and layer when the room or its shape changes.
+            key={`${room.id}:${room.cols}x${room.rows}:${room.layers.length}`}
             room={room}
             spaces={roomSpaces}
             items={roomItems}
@@ -109,7 +130,7 @@ export default function App() {
             }}
           />
         )}
-        {tab === 'quests' && <QuestsTab room={room} rooms={rooms} spaces={spaces} items={items} />}
+        {tab === 'quests' && <QuestsTab room={room} rooms={rooms} spaces={spaces} items={items} score={score} />}
         {tab === 'den' && <DenTab rooms={rooms} spaces={spaces} items={items} />}
       </main>
 

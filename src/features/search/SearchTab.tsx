@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useRepos } from '../../data/RepoContext';
+import { Mascot } from '../../app/Mascot';
 import { play } from '../../app/sound';
 import { spaceLayers } from '../../domain/grid';
 import { searchItems } from '../../domain/search';
@@ -55,7 +56,12 @@ export function SearchTab({ rooms, spaces, items, onLocate }: Props) {
             </li>
           );
         })}
-        {query && !results.length && <li className="hint">Nothing found. Perhaps the Melynx has it.</li>}
+        {query && !results.length && (
+          <li className="row empty">
+            <Mascot size={48} />
+            <span className="hint">Nothing found. Perhaps Bandit has it.</span>
+          </li>
+        )}
       </ul>
     </section>
   );

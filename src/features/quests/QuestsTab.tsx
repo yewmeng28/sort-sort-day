@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
-import { useDismissals, useRepos } from '../../data/RepoContext';
+import { useAwardXp, useDismissals, useRepos } from '../../data/RepoContext';
 import { play } from '../../app/sound';
+import { XP } from '../../domain/progress';
 import { moveItem } from '../../domain/rooms';
+import { ProgressPanel } from '../progress/ProgressPanel';
 import { suggest, suggestInterRoom } from '../../domain/suggestions';
 import type { Item, Room, Space, Suggestion } from '../../domain/types';
 
@@ -12,10 +14,12 @@ interface Props {
   /** All spaces and items across every room. */
   spaces: Space[];
   items: Item[];
+  score: { percent: number; misplaced: number; total: number };
 }
 
-export function QuestsTab({ room, rooms, spaces, items }: Props) {
+export function QuestsTab({ room, rooms, spaces, items, score }: Props) {
   const repos = useRepos();
+  const awardXp = useAwardXp();
   const dismissed = useDismissals();
   const [showCancelled, setShowCancelled] = useState(false);
 
@@ -44,7 +48,9 @@ export function QuestsTab({ room, rooms, spaces, items }: Props) {
     const target = spaces.find((s) => s.id === quest.toSpaceId);
     if (!target) return;
     const now = Date.now();
-    await Promise.all(items.filter((i) => quest.itemIds.includes(i.id)).map((i) => repos.items.save(moveItem(i, target, now))));
+    const moving = items.filter((i) => quest.itemIds.includes(i.id));
+    await Promise.all(moving.map((i) => repos.items.save(moveItem(i, target, now))));
+    await awardXp(XP.questItem * moving.length);
     play('confirm');
   };
 
@@ -76,6 +82,7 @@ export function QuestsTab({ room, rooms, spaces, items }: Props) {
   return (
     <section className="panel">
       <h2>Quests</h2>
+      <ProgressPanel score={score} />
 
       <h3>In {room.name}</h3>
       {renderActive(inRoom.active, 'Nothing to tidy here. Add categories, capacities and how often you use things to get quests.')}
