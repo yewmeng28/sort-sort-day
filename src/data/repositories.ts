@@ -1,4 +1,4 @@
-import type { BackupFile, Category, Item, Room, Space } from '../domain/types';
+import type { BackupFile, Category, Dismissal, Item, Room, Space } from '../domain/types';
 
 export interface Repository<T extends { id: string }> {
   list(): Promise<T[]>;
@@ -15,6 +15,7 @@ export type SpaceRepository = Repository<Space> & {
 export type ItemRepository = Repository<Item>;
 
 export type CategoryRepository = Repository<Category>;
+export type DismissalRepository = Repository<Dismissal>;
 
 export interface BackupRepository {
   exportAll(): Promise<BackupFile>;
@@ -26,5 +27,6 @@ export interface Repositories {
   spaces: SpaceRepository;
   items: ItemRepository;
   categories: CategoryRepository;
+  dismissals: DismissalRepository;
   backup: BackupRepository;
 }

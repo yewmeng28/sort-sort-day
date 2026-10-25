@@ -33,6 +33,11 @@ export const useCategories = () => {
   return useLiveQuery(() => categories.list(), [categories]);
 };
 
+export const useDismissals = () => {
+  const { dismissals } = useRepos();
+  return useLiveQuery(() => dismissals.list(), [dismissals]);
+};
+
 export const useItems = () => {
   const { items } = useRepos();
   return useLiveQuery(() => items.list(), [items]);

@@ -9,11 +9,13 @@
   --line: #8a6a3f;
   --font-title: 'Cinzel', 'Georgia', serif;
   --font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --tabs: 52px;
 }
 
 * { box-sizing: border-box; }
 
-html, body, #root { height: 100%; margin: 0; }
+html, body { margin: 0; }
+body { min-height: 100vh; }
 
 body {
   background: var(--leather);
@@ -22,14 +24,13 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Same structure as Go Where / Heavy Metal: the page scrolls and leaves just enough room under the fixed tab bar. */
 .app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
   max-width: 720px;
   margin: 0 auto;
-  padding: env(safe-area-inset-top) 16px calc(64px + env(safe-area-inset-bottom));
+  padding: env(safe-area-inset-top) 16px calc(var(--tabs) + env(safe-area-inset-bottom) + 12px);
 }
+main > .panel:last-child { margin-bottom: 0; }
 
 h1, h2 { font-family: var(--font-title); margin: 0.4em 0; }
 h1 { color: var(--parchment); letter-spacing: 0.05em; }
@@ -119,9 +120,22 @@ button.primary { background: var(--leather-light); color: var(--parchment); bord
   bottom: 0;
   display: flex;
   background: var(--leather-light);
+  height: calc(var(--tabs) + env(safe-area-inset-bottom));
   border-top: 2px solid var(--gold);
   padding-bottom: env(safe-area-inset-bottom);
   z-index: 5;
 }
-.bottom-nav button { flex: 1; min-height: 52px; border: 0; border-radius: 0; background: transparent; color: var(--parchment); font-family: var(--font-title); justify-content: center; }
+.bottom-nav button { flex: 1; min-height: 0; height: 100%; border: 0; border-radius: 0; background: transparent; color: var(--parchment); font-family: var(--font-title); justify-content: center; }
 .bottom-nav button.active { background: var(--leather); color: var(--gold); }
+
+/* rooms */
+.room-switch { max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--leather-light); color: var(--parchment); border-color: var(--gold); font-family: var(--font-title); }
+.room-pick { flex: 1; flex-direction: column; align-items: flex-start; justify-content: center; text-align: left; min-height: 48px; background: #f6ecd2; }
+.room-pick.active { border-color: var(--gold); border-width: 2px; }
+.add-form .hint { align-self: center; margin: 0; }
+
+/* quests */
+h3 { font-family: var(--font-title); font-size: 1rem; margin: 16px 0 4px; }
+.quest { align-items: flex-start; gap: 12px; }
+.quest.cancelled { opacity: 0.6; }
+button.link { background: none; border: 0; padding: 0; min-height: 40px; text-decoration: underline; }

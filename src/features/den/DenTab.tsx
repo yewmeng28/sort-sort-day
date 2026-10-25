@@ -2,21 +2,25 @@ import { useState, type ChangeEvent } from 'react';
 import { useCategories, useRepos } from '../../data/RepoContext';
 import { isMuted, play, setMuted } from '../../app/sound';
 import { categoryNames, deleteCategory, renameCategory, type CategoryChange } from '../../domain/categories';
-import type { BackupFile, Item, Space } from '../../domain/types';
+import { moveItem, sortRooms } from '../../domain/rooms';
+import type { BackupFile, Item, Room, Space } from '../../domain/types';
 
 interface Props {
+  rooms: Room[];
   spaces: Space[];
   items: Item[];
 }
 
-export function DenTab({ spaces, items }: Props) {
+export function DenTab({ rooms, spaces, items }: Props) {
   const repos = useRepos();
   const [muted, setMutedState] = useState(isMuted());
   const [message, setMessage] = useState('');
   const lost = items.filter((i) => i.status === 'missing' || !i.spaceId);
 
   const place = async (item: Item, spaceId: string) => {
-    await repos.items.save({ ...item, spaceId, status: 'stored', updatedAt: Date.now() });
+    const space = spaces.find((s) => s.id === spaceId);
+    if (!space) return;
+    await repos.items.save(moveItem(item, space, Date.now()));
     play('confirm');
   };
 
@@ -78,7 +82,11 @@ export function DenTab({ spaces, items }: Props) {
             <span>{item.name} ×{item.qty}</span>
             <select aria-label={`Found ${item.name}`} value="" onChange={(e) => e.target.value && place(item, e.target.value)}>
               <option value="">Found it in…</option>
-              {spaces.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {sortRooms(rooms).map((r) => (
+                <optgroup key={r.id} label={r.name}>
+                  {spaces.filter((s) => s.roomId === r.id).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </optgroup>
+              ))}
             </select>
             <button onClick={() => { void repos.items.remove(item.id); play('cancel'); }}>Gone for good</button>
           </li>

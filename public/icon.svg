@@ -1,11 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#3b2a1c"/>
-  <!-- cat ears peeking over a chest -->
-  <path d="M150 210 L170 110 L238 180 Z" fill="#d9a521"/>
-  <path d="M362 210 L342 110 L274 180 Z" fill="#d9a521"/>
-  <rect x="96" y="190" width="320" height="130" rx="40" fill="#8a5a2b" stroke="#d9a521" stroke-width="12"/>
-  <rect x="96" y="300" width="320" height="130" rx="20" fill="#5a4230" stroke="#d9a521" stroke-width="12"/>
-  <rect x="226" y="270" width="60" height="70" rx="12" fill="#d9a521"/>
-  <circle cx="200" cy="245" r="12" fill="#2a1d12"/>
-  <circle cx="312" cy="245" r="12" fill="#2a1d12"/>
+  <rect width="512" height="512" fill="#3b2a1c"/>
+
+  <!-- treasure chest -->
+  <path d="M70 250 Q70 130 256 130 Q442 130 442 250 Z" fill="#8a5a2b" stroke="#d9a521" stroke-width="12" stroke-linejoin="round"/>
+  <rect x="70" y="250" width="372" height="190" rx="18" fill="#6b4421" stroke="#d9a521" stroke-width="12"/>
+  <rect x="70" y="238" width="372" height="26" fill="#d9a521"/>
+  <rect x="130" y="130" width="26" height="310" fill="#d9a521" opacity="0.55"/>
+  <rect x="356" y="130" width="26" height="310" fill="#d9a521" opacity="0.55"/>
+  <rect x="226" y="236" width="60" height="64" rx="10" fill="#f0c24a" stroke="#2a1d12" stroke-width="8"/>
+  <circle cx="256" cy="262" r="8" fill="#2a1d12"/>
+
+  <!-- stylised S ending in arrowheads: dark outline first, then gold on top -->
+  <g fill="none" stroke-linecap="butt" stroke-linejoin="round">
+    <path d="M338 118 C218 108 148 168 238 226 C326 282 352 352 174 346" stroke="#2a1d12" stroke-width="58"/>
+    <path d="M338 118 C218 108 148 168 238 226 C326 282 352 352 174 346" stroke="#f0c24a" stroke-width="36"/>
+  </g>
+  <!-- arrowheads at both ends (outline, then gold) -->
+  <g stroke="#2a1d12" stroke-width="14" stroke-linejoin="round" fill="#f0c24a">
+    <path d="M326 76 L398 120 L326 164 Z"/>
+    <path d="M186 304 L108 346 L186 390 Z"/>
+  </g>
 </svg>

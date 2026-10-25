@@ -3,6 +3,7 @@ import { useCategories, useRepos } from '../../data/RepoContext';
 import { play } from '../../app/sound';
 import { categoryNames } from '../../domain/categories';
 import { spaceLayers } from '../../domain/grid';
+import { moveItem, sortRooms } from '../../domain/rooms';
 import type { Item, Room, Space } from '../../domain/types';
 
 /** Sentinel option value; never stored as a category name. */
@@ -10,14 +11,16 @@ const NEW_CATEGORY = '__new__';
 
 interface Props {
   space: Space;
-  room: Room;
+  rooms: Room[];
+  /** Every space in every room, so items can be moved between rooms. */
   spaces: Space[];
   items: Item[];
   onClose: () => void;
 }
 
-export function SpaceDetail({ space, room, spaces, items, onClose }: Props) {
+export function SpaceDetail({ space, rooms, spaces, items, onClose }: Props) {
   const repos = useRepos();
+  const room = rooms.find((r) => r.id === space.roomId)!;
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [qty, setQty] = useState(1);
@@ -107,12 +110,17 @@ export function SpaceDetail({ space, room, spaces, items, onClose }: Props) {
                     aria-label="Move to"
                     value=""
                     onChange={(e) => {
-                      if (e.target.value) { void update(item, { spaceId: e.target.value }); play('confirm'); }
+                      const target = spaces.find((s) => s.id === e.target.value);
+                      if (target) { void repos.items.save(moveItem(item, target, Date.now())); play('confirm'); }
                     }}
                   >
                     <option value="">Move to…</option>
-                    {spaces.filter((s) => s.id !== space.id).map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                    {sortRooms(rooms).map((r) => (
+                      <optgroup key={r.id} label={r.name}>
+                        {spaces.filter((s) => s.roomId === r.id && s.id !== space.id).map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                   <button onClick={() => { void update(item, { status: 'missing', spaceId: null }); play('sneak'); }}>

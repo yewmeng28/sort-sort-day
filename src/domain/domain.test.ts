@@ -12,9 +12,10 @@ import {
 } from './grid';
 import { categoryNames, deleteCategory, renameCategory } from './categories';
 import { layoutLabel } from './label';
-import { suggest } from './suggestions';
+import { clampGrid, DEFAULT_LAYERS, moveItem, parseLayers, sortRooms } from './rooms';
+import { suggest, suggestInterRoom } from './suggestions';
 import { searchItems } from './search';
-import type { Item, Space } from './types';
+import type { Item, Room, Space } from './types';
 
 const space = (id: string, cells: Space['cells'], extra: Partial<Space> = {}): Space => ({
   id,
@@ -167,7 +168,8 @@ describe('suggestions', () => {
       item('c2', 'desk', { category: 'cables' }),
       item('c3', 'wardrobe', { category: 'Cables' }),
     ];
-    const [s] = suggest(spaces, items, 2);
+    const [s] = suggest('r', spaces, items, 2);
+    expect(s.id).toBe('consolidate:r:cables');
     expect(s.kind).toBe('consolidate');
     expect(s.toSpaceId).toBe('desk');
     expect(s.itemIds).toEqual(['c3']);
@@ -176,7 +178,7 @@ describe('suggestions', () => {
   it('moves least-used items out of an overfull space', () => {
     const spaces = [space('a', [], { capacity: 1 }), space('b', [], { capacity: 5 })];
     const items = [item('rare', 'a', { useFrequency: 1 }), item('often', 'a', { useFrequency: 3 })];
-    const overfull = suggest(spaces, items, 2).find((s) => s.kind === 'overfull');
+    const overfull = suggest('r', spaces, items, 2).find((s) => s.kind === 'overfull');
     expect(overfull?.itemIds).toEqual(['rare']);
     expect(overfull?.toSpaceId).toBe('b');
   });
@@ -185,13 +187,78 @@ describe('suggestions', () => {
     const high = space('high', cellsInRect(0, 0, 0, 0, 2));
     const low = space('low', cellsInRect(1, 0, 1, 0, 0));
     const items = [item('kettle', 'high', { useFrequency: 3 })];
-    const a = suggest([high, low], items, 3).find((s) => s.kind === 'accessibility');
+    const a = suggest('r', [high, low], items, 3).find((s) => s.kind === 'accessibility');
     expect(a?.toSpaceId).toBe('low');
   });
 
   it('ignores missing items', () => {
     const items = [item('x', null, { status: 'missing' })];
-    expect(suggest([], items, 3)).toEqual([]);
+    expect(suggest('r', [], items, 3)).toEqual([]);
+  });
+});
+
+describe('inter-room quests', () => {
+  const rooms: Room[] = [
+    { id: 'study', name: 'Study', cols: 3, rows: 3, layers: ['Floor'] },
+    { id: 'bed', name: 'Bedroom', cols: 3, rows: 3, layers: ['Floor'] },
+  ];
+  const desk = space('desk', [], { roomId: 'study', name: 'Desk drawer' });
+  const wardrobe = space('wardrobe', [], { roomId: 'bed', name: 'Wardrobe' });
+  const cable = (id: string, spaceId: string, roomId: string) => item(id, spaceId, { roomId, category: 'Cables' });
+
+  it('moves the smaller group into the room holding most of a category', () => {
+    const items = [cable('c1', 'desk', 'study'), cable('c2', 'desk', 'study'), cable('c3', 'wardrobe', 'bed')];
+    const [q] = suggestInterRoom(rooms, [desk, wardrobe], items);
+    expect(q.id).toBe('room:cables:bed');
+    expect(q.kind).toBe('room');
+    expect(q.toSpaceId).toBe('desk');
+    expect(q.itemIds).toEqual(['c3']);
+    expect(q.message).toContain('Bedroom');
+    expect(q.message).toContain('Study');
+  });
+
+  it('skips ties, full target spaces and single-room categories', () => {
+    const tie = [cable('c1', 'desk', 'study'), cable('c2', 'wardrobe', 'bed')];
+    expect(suggestInterRoom(rooms, [desk, wardrobe], tie)).toEqual([]);
+
+    const full = space('desk', [], { roomId: 'study', capacity: 2 });
+    const crowded = [cable('c1', 'desk', 'study'), cable('c2', 'desk', 'study'), cable('c3', 'wardrobe', 'bed')];
+    expect(suggestInterRoom(rooms, [full, wardrobe], crowded)).toEqual([]);
+
+    const same = [cable('c1', 'desk', 'study'), cable('c2', 'desk', 'study')];
+    expect(suggestInterRoom(rooms, [desk, wardrobe], same)).toEqual([]);
+  });
+
+  it('falls back to the emptiest space in the home room when the category home is full', () => {
+    const full = space('desk', [], { roomId: 'study', capacity: 2, name: 'Desk drawer' });
+    const shelf = space('shelf', [], { roomId: 'study', name: 'Shelf' });
+    const items = [cable('c1', 'desk', 'study'), cable('c2', 'desk', 'study'), cable('c3', 'wardrobe', 'bed')];
+    expect(suggestInterRoom(rooms, [full, shelf, wardrobe], items)[0].toSpaceId).toBe('shelf');
+  });
+});
+
+describe('rooms', () => {
+  it('lists favourites first, then alphabetically', () => {
+    const mk = (name: string, favorite?: boolean): Room => ({ id: name, name, cols: 1, rows: 1, layers: ['Floor'], favorite });
+    expect(sortRooms([mk('Study'), mk('Attic'), mk('Kitchen', true), mk('Bedroom', true)]).map((r) => r.name)).toEqual([
+      'Bedroom',
+      'Kitchen',
+      'Attic',
+      'Study',
+    ]);
+  });
+
+  it('parses layer names with a fallback and clamps grid sizes', () => {
+    expect(parseLayers(' Floor , Shelf,, ')).toEqual(['Floor', 'Shelf']);
+    expect(parseLayers('  ')).toEqual(DEFAULT_LAYERS);
+    expect(clampGrid(99, 6)).toBe(20);
+    expect(clampGrid(0, 6)).toBe(6);
+    expect(clampGrid(Number.NaN, 6)).toBe(6);
+  });
+
+  it("moves an item into a space and follows the space's room", () => {
+    const moved = moveItem(item('i', null, { status: 'missing', roomId: 'a' }), space('s', [], { roomId: 'b' }), 9);
+    expect([moved.spaceId, moved.roomId, moved.status, moved.updatedAt]).toEqual(['s', 'b', 'stored', 9]);
   });
 });
 

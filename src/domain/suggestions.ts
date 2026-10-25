@@ -1,5 +1,5 @@
 import { spaceLayers } from './grid';
-import type { Item, Space, Suggestion } from './types';
+import type { Item, Room, Space, Suggestion } from './types';
 
 const stored = (items: Item[]) => items.filter((i) => i.status === 'stored' && i.spaceId);
 
@@ -13,27 +13,39 @@ const freeSlots = (space: Space, items: Item[]) =>
 const emptiest = (spaces: Space[], items: Item[]) =>
   [...spaces].sort((a, b) => freeSlots(b, items) - freeSlots(a, items));
 
-export function suggest(spaces: Space[], allItems: Item[], layerCount: number): Suggestion[] {
+/** Group items by lowercased category, skipping uncategorised ones. */
+function groupByCategory(items: Item[]): Map<string, Item[]> {
+  const groups = new Map<string, Item[]>();
+  for (const item of items) {
+    const key = item.category.trim().toLowerCase();
+    if (key) groups.set(key, [...(groups.get(key) ?? []), item]);
+  }
+  return groups;
+}
+
+/** The key with the highest count, or undefined if there is none or the top spot is tied. */
+function clearWinner(counts: Map<string, number>): string | undefined {
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  if (!ranked.length || (ranked.length > 1 && ranked[0][1] === ranked[1][1])) return undefined;
+  return ranked[0][0];
+}
+
+/** Quests within one room. Pass only that room's spaces and items. */
+export function suggest(roomId: string, spaces: Space[], allItems: Item[], layerCount: number): Suggestion[] {
   const items = stored(allItems);
   const spaceById = new Map(spaces.map((s) => [s.id, s]));
   const name = (id: string) => spaceById.get(id)?.name ?? 'somewhere';
   const out: Suggestion[] = [];
 
   // 1. Category scatter: gather a category into the space that already holds most of it.
-  const byCategory = new Map<string, Item[]>();
-  for (const item of items) {
-    const key = item.category.trim().toLowerCase();
-    if (!key) continue;
-    byCategory.set(key, [...(byCategory.get(key) ?? []), item]);
-  }
-  for (const [category, group] of byCategory) {
+  for (const [category, group] of groupByCategory(items)) {
     const perSpace = new Map<string, number>();
     for (const i of group) perSpace.set(i.spaceId!, (perSpace.get(i.spaceId!) ?? 0) + 1);
     if (perSpace.size < 2) continue;
     const [target] = [...perSpace.entries()].sort((a, b) => b[1] - a[1])[0];
     const strays = group.filter((i) => i.spaceId !== target);
     out.push({
-      id: `consolidate:${category}`,
+      id: `consolidate:${roomId}:${category}`,
       kind: 'consolidate',
       message: `Gather ${strays.length} "${category}" item(s) into ${name(target)}`,
       itemIds: strays.map((i) => i.id),
@@ -79,6 +91,48 @@ export function suggest(spaces: Space[], allItems: Item[], layerCount: number): 
         kind: 'accessibility',
         message: `${item.name} is used often but sits high up: move it to ${target.name}`,
         itemIds: [item.id],
+        toSpaceId: target.id,
+      });
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Quests across rooms: when a category is spread over several rooms, move the smaller groups into the room that
+ * holds most of it, into the space that already holds that category (or the emptiest one) if it has room.
+ * Ties are skipped because there is no clear home.
+ */
+export function suggestInterRoom(rooms: Room[], spaces: Space[], allItems: Item[]): Suggestion[] {
+  const items = stored(allItems);
+  const spaceById = new Map(spaces.map((s) => [s.id, s]));
+  const roomName = (id: string) => rooms.find((r) => r.id === id)?.name ?? 'another room';
+  const out: Suggestion[] = [];
+
+  for (const [category, group] of groupByCategory(items)) {
+    const perRoom = new Map<string, Item[]>();
+    for (const i of group) perRoom.set(i.roomId, [...(perRoom.get(i.roomId) ?? []), i]);
+    if (perRoom.size < 2) continue;
+
+    const homeRoomId = clearWinner(new Map([...perRoom].map(([id, list]) => [id, list.length])));
+    if (!homeRoomId) continue;
+
+    const homeSpaces = spaces.filter((s) => s.roomId === homeRoomId);
+    const perSpace = new Map<string, number>();
+    for (const i of perRoom.get(homeRoomId)!) perSpace.set(i.spaceId!, (perSpace.get(i.spaceId!) ?? 0) + 1);
+    const categoryHome = clearWinner(perSpace) ?? [...perSpace.keys()][0];
+    const candidates = [spaceById.get(categoryHome), ...emptiest(homeSpaces, items)].filter((s): s is Space => !!s);
+
+    for (const [roomId, strays] of perRoom) {
+      if (roomId === homeRoomId) continue;
+      const target = candidates.find((s) => freeSlots(s, items) >= strays.length);
+      if (!target) continue;
+      out.push({
+        id: `room:${category}:${roomId}`,
+        kind: 'room',
+        message: `Move ${strays.length} "${category}" item(s) from ${roomName(roomId)} to ${target.name} in ${roomName(homeRoomId)}`,
+        itemIds: strays.map((i) => i.id),
         toSpaceId: target.id,
       });
     }

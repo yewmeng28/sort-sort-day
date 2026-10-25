@@ -10,6 +10,8 @@ export interface Room {
   cols: number;
   rows: number;
   layers: string[];
+  /** Favourite rooms are listed first. */
+  favorite?: boolean;
 }
 
 /** A storage space owns a set of (x, y, layer) cells. A tall cupboard spans layers; a wall cupboard has only a high layer. */
@@ -46,9 +48,16 @@ export interface Category {
   name: string;
 }
 
-export interface Suggestion {
+/** A quest the user cancelled; it stays hidden until restored. `id` is the suggestion id. */
+export interface Dismissal {
   id: string;
-  kind: 'consolidate' | 'overfull' | 'accessibility';
+  at: number;
+}
+
+export interface Suggestion {
+  /** Stable across runs so a cancelled quest stays cancelled. */
+  id: string;
+  kind: 'consolidate' | 'overfull' | 'accessibility' | 'room';
   message: string;
   itemIds: string[];
   toSpaceId: string;
@@ -62,4 +71,5 @@ export interface BackupFile {
   items: Item[];
   /** Absent in backups made before categories existed. */
   categories?: Category[];
+  dismissed?: Dismissal[];
 }

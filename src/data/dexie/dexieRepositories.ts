@@ -32,6 +32,12 @@ export function createDexieRepositories(db = new SortSortDayDb()): Repositories 
       save: async (category) => void (await db.categories.put(category)),
       remove: (id) => db.categories.delete(id),
     },
+    dismissals: {
+      list: () => db.dismissedQuests.toArray(),
+      get: (id) => db.dismissedQuests.get(id),
+      save: async (dismissal) => void (await db.dismissedQuests.put(dismissal)),
+      remove: (id) => db.dismissedQuests.delete(id),
+    },
     backup: {
       exportAll: async () => ({
         version: 1,
@@ -40,14 +46,22 @@ export function createDexieRepositories(db = new SortSortDayDb()): Repositories 
         spaces: await db.spaces.toArray(),
         items: await db.items.toArray(),
         categories: await db.categories.toArray(),
+        dismissed: await db.dismissedQuests.toArray(),
       }),
       importAll: (backup) =>
-        db.transaction('rw', db.rooms, db.spaces, db.items, db.categories, async () => {
-          await Promise.all([db.rooms.clear(), db.spaces.clear(), db.items.clear(), db.categories.clear()]);
+        db.transaction('rw', [db.rooms, db.spaces, db.items, db.categories, db.dismissedQuests], async () => {
+          await Promise.all([
+            db.rooms.clear(),
+            db.spaces.clear(),
+            db.items.clear(),
+            db.categories.clear(),
+            db.dismissedQuests.clear(),
+          ]);
           await db.rooms.bulkPut(backup.rooms);
           await db.spaces.bulkPut(backup.spaces);
           await db.items.bulkPut(backup.items);
           await db.categories.bulkPut(backup.categories ?? []);
+          await db.dismissedQuests.bulkPut(backup.dismissed ?? []);
         }),
     },
   };
