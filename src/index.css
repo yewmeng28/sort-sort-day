@@ -159,3 +159,6 @@ button.link { background: none; border: 0; padding: 0; min-height: 40px; text-de
 h1 { display: flex; align-items: center; gap: 8px; }
 .mascot { flex: none; display: block; }
 .row.empty { justify-content: flex-start; gap: 12px; }
+
+/* installed app: no double-tap zoom (pinch is blocked in main.tsx) */
+html.standalone { touch-action: manipulation; }
