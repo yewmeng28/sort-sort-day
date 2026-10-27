@@ -1,4 +1,5 @@
 import { spaceLayers } from './grid';
+import { plural } from './text';
 import type { Item, Room, Space, Suggestion } from './types';
 
 const stored = (items: Item[]) => items.filter((i) => i.status === 'stored' && i.spaceId);
@@ -22,6 +23,9 @@ function groupByCategory(items: Item[]): Map<string, Item[]> {
   }
   return groups;
 }
+
+/** The category as the user typed it (groups are keyed by its lowercase form). */
+const categoryLabel = (group: Item[]) => group[0].category.trim();
 
 /** The key with the highest count, or undefined if there is none or the top spot is tied. */
 function clearWinner(counts: Map<string, number>): string | undefined {
@@ -47,7 +51,7 @@ export function suggest(roomId: string, spaces: Space[], allItems: Item[], layer
     out.push({
       id: `consolidate:${roomId}:${category}`,
       kind: 'consolidate',
-      message: `Gather ${strays.length} "${category}" item(s) into ${name(target)}`,
+      message: `Gather ${plural(strays.length, `${categoryLabel(group)} item`)} into ${name(target)}`,
       itemIds: strays.map((i) => i.id),
       toSpaceId: target,
     });
@@ -131,7 +135,7 @@ export function suggestInterRoom(rooms: Room[], spaces: Space[], allItems: Item[
       out.push({
         id: `room:${category}:${roomId}`,
         kind: 'room',
-        message: `Move ${strays.length} "${category}" item(s) from ${roomName(roomId)} to ${target.name} in ${roomName(homeRoomId)}`,
+        message: `Move ${plural(strays.length, `${categoryLabel(group)} item`)} from ${roomName(roomId)} to ${target.name} in ${roomName(homeRoomId)}`,
         itemIds: strays.map((i) => i.id),
         toSpaceId: target.id,
       });

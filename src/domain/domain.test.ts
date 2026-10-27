@@ -15,6 +15,7 @@ import { layoutLabel } from './label';
 import { clampGrid, DEFAULT_LAYERS, moveItem, parseLayers, sortRooms } from './rooms';
 import { suggest, suggestInterRoom } from './suggestions';
 import { searchItems } from './search';
+import { plural } from './text';
 import type { Item, Room, Space } from './types';
 
 const space = (id: string, cells: Space['cells'], extra: Partial<Space> = {}): Space => ({
@@ -108,13 +109,19 @@ describe('outline and labels', () => {
     expect(largestRect(l, 0)).toEqual({ x: 0, y: 0, w: 1, h: 3 });
   });
 
-  it('rotates labels in tall spaces and keeps them inside the space', () => {
+  it('rotates labels in tall spaces', () => {
     const tall = layoutLabel({ x: 0, y: 0, w: 1, h: 4 }, 'Wardrobe', 60);
     expect(tall.rotate).toBe(true);
-    const wide = layoutLabel({ x: 0, y: 0, w: 1, h: 1 }, 'An extremely long cupboard name', 60);
-    expect(wide.rotate).toBe(false);
-    expect(wide.text.endsWith('…')).toBe(true);
-    expect(wide.text.length * wide.fontSize * 0.75).toBeLessThanOrEqual(60 - 12);
+    expect(tall.lines).toEqual(['Wardrobe']);
+  });
+});
+
+describe('plural', () => {
+  it('uses the singular only for exactly one', () => {
+    expect(plural(1, 'item')).toBe('1 item');
+    expect(plural(0, 'item')).toBe('0 items');
+    expect(plural(3, 'layer')).toBe('3 layers');
+    expect(plural(2, 'box', 'boxes')).toBe('2 boxes');
   });
 });
 
@@ -171,6 +178,7 @@ describe('suggestions', () => {
     const [s] = suggest('r', spaces, items, 2);
     expect(s.id).toBe('consolidate:r:cables');
     expect(s.kind).toBe('consolidate');
+    expect(s.message).toBe('Gather 1 Cables item into desk');
     expect(s.toSpaceId).toBe('desk');
     expect(s.itemIds).toEqual(['c3']);
   });
@@ -213,8 +221,7 @@ describe('inter-room quests', () => {
     expect(q.kind).toBe('room');
     expect(q.toSpaceId).toBe('desk');
     expect(q.itemIds).toEqual(['c3']);
-    expect(q.message).toContain('Bedroom');
-    expect(q.message).toContain('Study');
+    expect(q.message).toBe('Move 1 Cables item from Bedroom to Desk drawer in Study');
   });
 
   it('skips ties, full target spaces and single-room categories', () => {

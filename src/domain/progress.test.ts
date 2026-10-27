@@ -11,7 +11,7 @@ import {
   recordDay,
   xpForLevel,
 } from './progress';
-import { editRoom, moveSpace } from './rooms';
+import { editRoom, moveSpace, spanAllLayers } from './rooms';
 import type { Item, Room, Space, Suggestion } from './types';
 
 const room: Room = { id: 'r', name: 'Study', cols: 4, rows: 3, layers: ['Floor', 'Mid', 'High'] };
@@ -90,6 +90,19 @@ describe('moveSpace', () => {
     expect(moveSpace(room, [ell, blockerSameLayer], 'ell', 1, 0)).toEqual({ ok: false, error: 'Another space is in the way.' });
     const blockerOtherLayer = space('b', [{ x: 2, y: 1, layer: 2 }]);
     expect(moveSpace(room, [ell, blockerOtherLayer], 'ell', 1, 0).ok).toBe(true);
+  });
+});
+
+describe('spanAllLayers', () => {
+  it('extends a space through every layer', () => {
+    const result = spanAllLayers(room, [space('desk', [{ x: 1, y: 1, layer: 1 }])], 'desk');
+    expect(result.ok && result.value.cells.map((c) => c.layer).sort()).toEqual([0, 1, 2]);
+  });
+
+  it('refuses when another space sits above or below', () => {
+    const desk = space('desk', [{ x: 1, y: 1, layer: 1 }]);
+    const shelf = space('shelf', [{ x: 1, y: 1, layer: 2 }]);
+    expect(spanAllLayers(room, [desk, shelf], 'desk')).toEqual({ ok: false, error: 'Another space is in the way on the High layer.' });
   });
 });
 

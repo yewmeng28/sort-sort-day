@@ -6,6 +6,8 @@ import { XP } from '../../domain/progress';
 import { spaceLayers } from '../../domain/grid';
 import { moveItem, sortRooms } from '../../domain/rooms';
 import type { Item, Room, Space } from '../../domain/types';
+import { Sheet } from '../../ui/Sheet';
+import { Swatches } from '../../ui/Swatches';
 
 /** Sentinel option value; never stored as a category name. */
 const NEW_CATEGORY = '__new__';
@@ -72,19 +74,16 @@ export function SpaceDetail({ space, rooms, spaces, items, onClose }: Props) {
 
   const update = (item: Item, patch: Partial<Item>) => repos.items.save({ ...item, ...patch, updatedAt: Date.now() });
 
+  const close = () => {
+    play('cancel');
+    onClose();
+  };
+
   return (
-    <div className="modal" role="dialog" aria-label={space.name}>
-      <section className="panel chest">
-        <header className="row">
-          <h2>{space.name}</h2>
-          <button onClick={() => { play('cancel'); onClose(); }}>Close</button>
-        </header>
+    <Sheet title={space.name} onClose={close}>
         <p className="hint">{layerNames}</p>
 
-        <label className="row colour">
-          <span>Colour</span>
-          <input type="color" value={space.color} onChange={(e) => repos.spaces.save({ ...space, color: e.target.value })} />
-        </label>
+        <Swatches value={space.color} onChange={(color) => void repos.spaces.save({ ...space, color })} label={`${space.name} colour`} />
 
         <label className="row">
           <span>Capacity (items)</span>
@@ -133,7 +132,7 @@ export function SpaceDetail({ space, rooms, spaces, items, onClose }: Props) {
                   <button onClick={() => { void update(item, { status: 'missing', spaceId: null }); play('sneak'); }}>
                     Bandit took it
                   </button>
-                  <button onClick={() => { void repos.items.remove(item.id); play('cancel'); }}>Delete</button>
+                  <button className="danger" onClick={() => { void repos.items.remove(item.id); play('cancel'); }}>Delete</button>
                 </div>
               )}
             </li>
@@ -176,7 +175,7 @@ export function SpaceDetail({ space, rooms, spaces, items, onClose }: Props) {
           {addingCategory && (
             <div className="row full">
               <button type="button" onClick={saveCategory}>Save category</button>
-              <button type="button" onClick={() => { setAddingCategory(false); setDraftCategory(''); }}>Cancel</button>
+              <button type="button" className="ghost" onClick={() => { setAddingCategory(false); setDraftCategory(''); }}>Cancel</button>
             </div>
           )}
 
@@ -187,7 +186,6 @@ export function SpaceDetail({ space, rooms, spaces, items, onClose }: Props) {
           </select>
           <button type="submit" className="full primary">Add item</button>
         </form>
-      </section>
-    </div>
+    </Sheet>
   );
 }

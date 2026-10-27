@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useProgress, useRepos } from '../../data/RepoContext';
 import { DEFAULT_PROGRESS, effectiveStreak, levelProgress, localDay } from '../../domain/progress';
+import { plural } from '../../domain/text';
 
 interface Props {
   score: { percent: number; misplaced: number; total: number };
@@ -45,12 +46,12 @@ export function ProgressPanel({ score }: Props) {
           ? 'Add some items to start scoring.'
           : score.misplaced === 0
             ? 'Everything is where it belongs.'
-            : `${score.misplaced} of ${score.total} item(s) are lost or part of an open quest.`}
+            : `${score.misplaced} of ${plural(score.total, 'item')} ${score.misplaced === 1 ? 'is' : 'are'} lost or part of an open quest.`}
       </p>
 
       <div className="row wrap">
         <span>
-          Streak: <strong>{streak}</strong> day(s) <span className="hint">(best {progress.bestStreak})</span>
+          Streak: <strong>{streak}</strong> {streak === 1 ? 'day' : 'days'} <span className="hint">(best {progress.bestStreak})</span>
           {metGoalToday && <span className="hint"> · goal met today</span>}
         </span>
         <label className="threshold">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useDismissals, useItems, useProgress, useRepos, useRooms, useSpaces } from './data/RepoContext';
 import { allQuests, localDay, packingScore, recordDay } from './domain/progress';
 import { Mascot } from './app/Mascot';
@@ -11,14 +11,15 @@ import { RoomsSheet } from './features/rooms/RoomsSheet';
 import { SearchTab } from './features/search/SearchTab';
 import { DEFAULT_LAYERS, sortRooms } from './domain/rooms';
 import type { Room } from './domain/types';
+import { ChevronDownIcon, DenIcon, MapIcon, QuestIcon, SearchIcon, StarIcon } from './ui/icons';
 
 type Tab = 'map' | 'search' | 'quests' | 'den';
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'map', label: 'Map' },
-  { id: 'search', label: 'Search' },
-  { id: 'quests', label: 'Quests' },
-  { id: 'den', label: 'Den' },
+const TABS: { id: Tab; label: string; Icon: (props: { size?: number }) => ReactElement }[] = [
+  { id: 'map', label: 'Map', Icon: MapIcon },
+  { id: 'search', label: 'Search', Icon: SearchIcon },
+  { id: 'quests', label: 'Quests', Icon: QuestIcon },
+  { id: 'den', label: 'Den', Icon: DenIcon },
 ];
 
 const DEFAULT_ROOM: Room = { id: 'default', name: 'My room', cols: 6, rows: 5, layers: DEFAULT_LAYERS };
@@ -59,11 +60,16 @@ export default function App() {
     if (rooms && rooms.length === 0) void repos.rooms.save(DEFAULT_ROOM);
   }, [rooms, repos]);
 
-  const score = useMemo(() => {
+  const progressView = useMemo(() => {
     if (!rooms || !spaces || !items) return undefined;
     const cancelled = new Set((dismissed ?? []).map((d) => d.id));
-    return packingScore(items, allQuests(rooms, spaces, items), cancelled);
+    const quests = allQuests(rooms, spaces, items);
+    return {
+      score: packingScore(items, quests, cancelled),
+      openQuests: quests.filter((q) => !cancelled.has(q.id)).length,
+    };
   }, [rooms, spaces, items, dismissed]);
+  const score = progressView?.score;
 
   // Count today towards the streak whenever the score reaches the goal. recordDay is idempotent per day,
   // and an empty inventory never counts.
@@ -92,18 +98,31 @@ export default function App() {
   const roomSpaces = spaces.filter((s) => s.roomId === room.id);
   const roomItems = items.filter((i) => i.roomId === room.id);
   const openSpace = spaces.find((s) => s.id === openSpaceId);
+  const missing = items.filter((i) => i.status === 'missing' || !i.spaceId).length;
+  const badges: Partial<Record<Tab, { count: number; label: string; alert?: boolean }>> = {
+    quests: { count: progressView?.openQuests ?? 0, label: 'open' },
+    den: { count: missing, label: 'missing', alert: true },
+  };
 
   return (
     <div className="app">
-      <header className="title">
-        <h1>
-          <Mascot size={34} />
-          Sort Sort Day
+      <header className="app-bar">
+        <Mascot size={32} />
+        <h1 className="app-bar-title">
+          <button
+            className="room-switch"
+            aria-haspopup="dialog"
+            aria-label={`${room.name}. Switch room`}
+            onClick={() => {
+              play('tick');
+              setRoomsOpen(true);
+            }}
+          >
+            {room.favorite && <StarIcon size={18} />}
+            <span className="room-name">{room.name}</span>
+            <ChevronDownIcon size={20} />
+          </button>
         </h1>
-        <button className="room-switch" aria-label="Switch room" onClick={() => { play('tick'); setRoomsOpen(true); }}>
-          {room.favorite && '★ '}
-          {room.name} ▾
-        </button>
       </header>
 
       <main>
@@ -115,6 +134,7 @@ export default function App() {
             spaces={roomSpaces}
             items={roomItems}
             highlightSpaceId={highlightId}
+            firstRun={spaces.length === 0 && items.length === 0}
             onOpenSpace={setOpenSpaceId}
           />
         )}
@@ -156,18 +176,32 @@ export default function App() {
       )}
 
       <nav className="bottom-nav" aria-label="Sections">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            className={t.id === tab ? 'active' : ''}
-            onClick={() => {
-              play('tick');
-              setTab(t.id);
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+        {TABS.map(({ id, label, Icon }) => {
+          const badge = badges[id];
+          const count = badge?.count ?? 0;
+          return (
+            <button
+              key={id}
+              className={id === tab ? 'active' : ''}
+              aria-current={id === tab ? 'page' : undefined}
+              aria-label={count ? `${label}, ${count} ${badge!.label}` : label}
+              onClick={() => {
+                play('tick');
+                setTab(id);
+              }}
+            >
+              <span className="tab-icon">
+                <Icon size={24} />
+                {count > 0 && (
+                  <span className={`tab-badge${badge!.alert ? ' alert' : ''}`} aria-hidden="true">
+                    {count > 99 ? '99+' : count}
+                  </span>
+                )}
+              </span>
+              <span className="tab-label">{label}</span>
+            </button>
+          );
+        })}
       </nav>
     </div>
   );

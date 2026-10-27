@@ -48,7 +48,7 @@ export function SearchTab({ rooms, spaces, items, onLocate }: Props) {
               {space && item.status === 'stored' && (
                 <div className="row">
                   <button onClick={() => { play('chest'); onLocate(space); }}>Show</button>
-                  <button onClick={() => { void repos.items.save({ ...item, status: 'missing', spaceId: null, updatedAt: Date.now() }); play('sneak'); }}>
+                  <button className="ghost" onClick={() => { void repos.items.save({ ...item, status: 'missing', spaceId: null, updatedAt: Date.now() }); play('sneak'); }}>
                     Not there
                   </button>
                 </div>

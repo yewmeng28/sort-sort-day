@@ -4,6 +4,7 @@ import { Mascot } from '../../app/Mascot';
 import { isMuted, play, setMuted } from '../../app/sound';
 import { categoryNames, deleteCategory, renameCategory, type CategoryChange } from '../../domain/categories';
 import { XP } from '../../domain/progress';
+import { plural } from '../../domain/text';
 import { moveItem, sortRooms } from '../../domain/rooms';
 import { parseBackup } from '../../domain/backup';
 import type { Item, Room, Space } from '../../domain/types';
@@ -47,7 +48,7 @@ export function DenTab({ rooms, spaces, items }: Props) {
   };
 
   const remove = async (name: string, count: number) => {
-    const detail = count ? ` ${count} item(s) will become uncategorised.` : '';
+    const detail = count ? ` ${plural(count, 'item')} will become uncategorised.` : '';
     if (!window.confirm(`Delete category "${name}"?${detail}`)) return;
     await applyCategoryChange(deleteCategory(items, name, Date.now()));
     play('cancel');
@@ -96,7 +97,7 @@ export function DenTab({ rooms, spaces, items }: Props) {
                 </optgroup>
               ))}
             </select>
-            <button onClick={() => { void repos.items.remove(item.id); play('cancel'); }}>Gone for good</button>
+            <button className="danger" onClick={() => { void repos.items.remove(item.id); play('cancel'); }}>Gone for good</button>
           </li>
         ))}
         {!lost.length && <li className="hint">Nothing missing.</li>}
@@ -111,7 +112,7 @@ export function DenTab({ rooms, spaces, items }: Props) {
               <span>{name} <span className="hint">({count})</span></span>
               <div className="row">
                 <button onClick={() => void rename(name)}>Rename</button>
-                <button onClick={() => void remove(name, count)}>Delete</button>
+                <button className="danger" onClick={() => void remove(name, count)}>Delete</button>
               </div>
             </li>
           );

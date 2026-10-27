@@ -70,8 +70,8 @@ export function QuestsTab({ room, rooms, spaces, items, score }: Props) {
         <li key={q.id} className="row quest">
           <span>{q.message}</span>
           <div className="row">
-            <button onClick={() => void apply(q)}>Do it</button>
-            <button aria-label="Cancel quest" onClick={() => void cancel(q)}>Cancel</button>
+            <button className="primary" onClick={() => void apply(q)}>Do it</button>
+            <button className="ghost" aria-label="Cancel quest" onClick={() => void cancel(q)}>Cancel</button>
           </div>
         </li>
       ))}

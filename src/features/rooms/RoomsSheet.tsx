@@ -2,7 +2,10 @@ import { useState, type FormEvent } from 'react';
 import { useRepos } from '../../data/RepoContext';
 import { play } from '../../app/sound';
 import { clampGrid, DEFAULT_LAYERS, editRoom, parseLayers, sortRooms } from '../../domain/rooms';
+import { plural } from '../../domain/text';
 import type { Item, Room, Space } from '../../domain/types';
+import { StarIcon } from '../../ui/icons';
+import { Sheet } from '../../ui/Sheet';
 
 interface Props {
   rooms: Room[];
@@ -68,7 +71,7 @@ export function RoomsSheet({ rooms, spaces, items, currentId, onSelect, onClose 
   const remove = async (room: Room) => {
     const roomSpaces = spaces.filter((s) => s.roomId === room.id);
     const roomItems = items.filter((i) => i.roomId === room.id);
-    const detail = `${roomSpaces.length} space(s) and ${roomItems.length} item(s) in it will be deleted.`;
+    const detail = `Its ${plural(roomSpaces.length, 'space')} and ${plural(roomItems.length, 'item')} will be deleted too.`;
     if (!window.confirm(`Delete "${room.name}"? ${detail}`)) return;
     await repos.spaces.apply({ remove: roomSpaces.map((s) => s.id) });
     await Promise.all(roomItems.map((i) => repos.items.remove(i.id)));
@@ -76,30 +79,40 @@ export function RoomsSheet({ rooms, spaces, items, currentId, onSelect, onClose 
     play('cancel');
   };
 
-  return (
-    <div className="modal" role="dialog" aria-label="Rooms">
-      <section className="panel chest">
-        <header className="row">
-          <h2>Rooms</h2>
-          <button onClick={() => { play('cancel'); onClose(); }}>Close</button>
-        </header>
+  const close = () => {
+    play('cancel');
+    onClose();
+  };
 
+  return (
+    <Sheet title="Rooms" onClose={close}>
         <ul className="results">
           {sortRooms(rooms).map((room) => (
             <li key={room.id}>
               <div className="row">
                 <button className={`room-pick ${room.id === currentId ? 'active' : ''}`} onClick={() => { play('tick'); onSelect(room.id); }}>
                   {room.name}
-                  <span className="hint">{room.cols}×{room.rows}, {room.layers.length} layer(s)</span>
+                  <span className="hint">
+                    {room.cols} × {room.rows} · {plural(room.layers.length, 'layer')}
+                  </span>
                 </button>
                 <div className="row">
-                  <button aria-label={room.favorite ? 'Unfavourite' : 'Favourite'} aria-pressed={!!room.favorite} onClick={() => void toggleFavorite(room)}>
-                    {room.favorite ? '★' : '☆'}
+                  <button
+                    className="icon-btn ghost"
+                    aria-label={room.favorite ? `Unfavourite ${room.name}` : `Favourite ${room.name}`}
+                    aria-pressed={!!room.favorite}
+                    onClick={() => void toggleFavorite(room)}
+                  >
+                    {room.favorite ? <StarIcon /> : <StarIcon fill="none" stroke="currentColor" strokeWidth={1.8} />}
                   </button>
                   <button aria-expanded={editingId === room.id} onClick={() => (editingId === room.id ? setEditingId(null) : startEdit(room))}>
                     Edit
                   </button>
-                  <button disabled={rooms.length < 2} onClick={() => void remove(room)}>Delete</button>
+                  {rooms.length > 1 && (
+                    <button className="danger" onClick={() => void remove(room)}>
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -132,7 +145,6 @@ export function RoomsSheet({ rooms, spaces, items, currentId, onSelect, onClose 
           <span className="hint">rows</span>
           <button type="submit" className="full primary">Add room</button>
         </form>
-      </section>
-    </div>
+    </Sheet>
   );
 }

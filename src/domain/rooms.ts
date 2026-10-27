@@ -1,4 +1,5 @@
-import { cellKey } from './grid';
+import { cellKey, extendThroughLayers } from './grid';
+import { plural } from './text';
 import type { Item, Room, Space } from './types';
 
 export const DEFAULT_LAYERS = ['Floor', 'Mid', 'High'];
@@ -44,7 +45,10 @@ export function editRoom(
     .flatMap((s) => s.cells)
     .filter((c) => c.x >= cols || c.y >= rows || c.layer >= layers.length).length;
   if (outside) {
-    return { ok: false, error: `${outside} storage cell(s) would fall outside the new size. Move or clear those spaces first.` };
+    return {
+      ok: false,
+      error: `${plural(outside, 'storage cell')} would fall outside the new size. Move or clear those spaces first.`,
+    };
   }
   return { ok: true, value: { ...room, name, cols, rows, layers } };
 }
@@ -60,6 +64,17 @@ export function moveSpace(room: Room, spaces: Space[], spaceId: string, dx: numb
   const taken = new Set(spaces.filter((s) => s.id !== spaceId).flatMap((s) => s.cells.map(cellKey)));
   if (cells.some((c) => taken.has(cellKey(c)))) return { ok: false, error: 'Another space is in the way.' };
   return { ok: true, value: { ...space, cells } };
+}
+
+/** Extend a space up and down through every layer of its room. Refused where another space already sits. */
+export function spanAllLayers(room: Room, spaces: Space[], spaceId: string): EditResult<Space> {
+  const space = spaces.find((s) => s.id === spaceId);
+  if (!space) return { ok: false, error: 'That space no longer exists.' };
+  const extended = extendThroughLayers(space, room.layers.length);
+  const taken = new Set(spaces.filter((s) => s.id !== spaceId).flatMap((s) => s.cells.map(cellKey)));
+  const blocked = extended.cells.find((c) => taken.has(cellKey(c)));
+  if (blocked) return { ok: false, error: `Another space is in the way on the ${room.layers[blocked.layer]} layer.` };
+  return { ok: true, value: extended };
 }
 
 /** Put an item into a space, following the space to its room. */
