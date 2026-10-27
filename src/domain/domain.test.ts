@@ -179,6 +179,7 @@ describe('suggestions', () => {
     expect(s.id).toBe('consolidate:r:cables');
     expect(s.kind).toBe('consolidate');
     expect(s.message).toBe('Gather 1 Cables item into desk');
+    expect(s.reason).toBe('Keeps your Cables together');
     expect(s.toSpaceId).toBe('desk');
     expect(s.itemIds).toEqual(['c3']);
   });
@@ -222,6 +223,26 @@ describe('inter-room quests', () => {
     expect(q.toSpaceId).toBe('desk');
     expect(q.itemIds).toEqual(['c3']);
     expect(q.message).toBe('Move 1 Cables item from Bedroom to Desk drawer in Study');
+    expect(q.reason).toBe('Most of your Cables are in Study');
+  });
+
+  it('keeps the same quest, with only the remaining items, after one subquest is done', () => {
+    const before = [
+      cable('c1', 'desk', 'study'),
+      cable('c2', 'desk', 'study'),
+      cable('c3', 'desk', 'study'),
+      cable('b1', 'wardrobe', 'bed'),
+      cable('b2', 'wardrobe', 'bed'),
+    ];
+    const [quest] = suggestInterRoom(rooms, [desk, wardrobe], before);
+    expect(quest.itemIds).toEqual(['b1', 'b2']);
+
+    // Subquest done: b1 moved to the desk drawer, then the quest was abandoned.
+    const after = before.map((i) => (i.id === 'b1' ? { ...i, roomId: 'study', spaceId: 'desk' } : i));
+    const [remaining] = suggestInterRoom(rooms, [desk, wardrobe], after);
+    expect(remaining.id).toBe(quest.id);
+    expect(remaining.itemIds).toEqual(['b2']);
+    expect(remaining.message).toBe('Move 1 Cables item from Bedroom to Desk drawer in Study');
   });
 
   it('skips ties, full target spaces and single-room categories', () => {

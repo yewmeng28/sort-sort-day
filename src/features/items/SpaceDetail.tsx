@@ -1,16 +1,17 @@
-import { useMemo, useState, type FormEvent } from 'react';
-import { useAwardXp, useCategories, useRepos } from '../../data/RepoContext';
+import { useState, type FormEvent } from 'react';
+import { useAwardXp, useRepos } from '../../data/RepoContext';
 import { play } from '../../app/sound';
-import { categoryNames } from '../../domain/categories';
-import { XP } from '../../domain/progress';
 import { spaceLayers } from '../../domain/grid';
-import { moveItem, sortRooms } from '../../domain/rooms';
+import { FREQUENCY_OPTIONS, frequencyLabel, fullnessText } from '../../domain/items';
+import { XP } from '../../domain/progress';
+import { fullness } from '../../domain/spaces';
 import type { Item, Room, Space } from '../../domain/types';
+import { Segmented, Stepper } from '../../ui/controls';
 import { Sheet } from '../../ui/Sheet';
 import { Swatches } from '../../ui/Swatches';
-
-/** Sentinel option value; never stored as a category name. */
-const NEW_CATEGORY = '__new__';
+import { useToast } from '../../ui/Toast';
+import { CategoryChips } from './CategoryChips';
+import { ItemActions } from './ItemActions';
 
 interface Props {
   space: Space;
@@ -21,34 +22,24 @@ interface Props {
   onClose: () => void;
 }
 
+/** A chest: its items first, a pinned field to add more, and the space's own settings tucked away below. */
 export function SpaceDetail({ space, rooms, spaces, items, onClose }: Props) {
   const repos = useRepos();
   const awardXp = useAwardXp();
+  const toast = useToast();
   const room = rooms.find((r) => r.id === space.roomId)!;
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  // Quick add. Category and frequency stay put between adds, so a batch of similar things is fast.
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [qty, setQty] = useState(1);
   const [useFrequency, setUseFrequency] = useState<Item['useFrequency']>(2);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [addingCategory, setAddingCategory] = useState(false);
-  const [draftCategory, setDraftCategory] = useState('');
+  const [expanded, setExpanded] = useState(false);
 
-  const savedCategories = useCategories();
-  const categories = useMemo(() => categoryNames(savedCategories ?? [], items), [savedCategories, items]);
-
-  const saveCategory = async () => {
-    const trimmed = draftCategory.trim();
-    if (trimmed) {
-      const existing = categories.find((c) => c.toLowerCase() === trimmed.toLowerCase());
-      if (!existing) await repos.categories.save({ id: trimmed.toLowerCase(), name: trimmed });
-      setCategory(existing ?? trimmed);
-      play('confirm');
-    }
-    setDraftCategory('');
-    setAddingCategory(false);
-  };
-
-  const here = items.filter((i) => i.spaceId === space.id && i.status === 'stored');
+  const here = items.filter((i) => i.spaceId === space.id && i.status === 'stored').sort((a, b) => a.name.localeCompare(b.name));
+  const openItem = here.find((i) => i.id === openId);
+  const { count, capacity, overfull } = fullness(space, items);
   const layerNames = spaceLayers(space).map((l) => room.layers[l]).join(' + ');
 
   const add = async (e: FormEvent) => {
@@ -68,124 +59,131 @@ export function SpaceDetail({ space, rooms, spaces, items, onClose }: Props) {
     });
     await awardXp(XP.addItem);
     play('confirm');
+    toast({ message: `Added ${name.trim()} · +${XP.addItem} XP` });
     setName('');
     setQty(1);
   };
 
-  const update = (item: Item, patch: Partial<Item>) => repos.items.save({ ...item, ...patch, updatedAt: Date.now() });
+  const setCapacity = (value: number | undefined) => void repos.spaces.save({ ...space, capacity: value });
 
   const close = () => {
     play('cancel');
     onClose();
   };
 
+  const footer = (
+    <form className="quick-add" onSubmit={add}>
+      <div className="quick-add-row">
+        <input
+          aria-label="New item name"
+          placeholder="Add an item…"
+          value={name}
+          onFocus={() => setExpanded(true)}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <button type="submit" className="primary" disabled={!name.trim()}>
+          Add
+        </button>
+      </div>
+      {expanded && (
+        <div className="quick-add-more">
+          <div className="field">
+            <span className="field-label">Category</span>
+            <CategoryChips value={category} onChange={setCategory} />
+          </div>
+          <div className="quick-add-split">
+            <div className="field">
+              <span className="field-label">Quantity</span>
+              <Stepper value={qty} onChange={setQty} label="Quantity" />
+            </div>
+            <div className="field">
+              <span className="field-label">How often do you use it?</span>
+              <Segmented options={FREQUENCY_OPTIONS} value={useFrequency} onChange={setUseFrequency} label="How often do you use it?" />
+            </div>
+          </div>
+          <button type="button" className="ghost" onClick={() => setExpanded(false)}>
+            Hide details
+          </button>
+        </div>
+      )}
+    </form>
+  );
+
   return (
-    <Sheet title={space.name} onClose={close}>
-        <p className="hint">{layerNames}</p>
-
-        <Swatches value={space.color} onChange={(color) => void repos.spaces.save({ ...space, color })} label={`${space.name} colour`} />
-
-        <label className="row">
-          <span>Capacity (items)</span>
-          <input
-            type="number"
-            min={0}
-            value={space.capacity ?? ''}
-            placeholder="none"
-            onChange={(e) => repos.spaces.save({ ...space, capacity: e.target.value === '' ? undefined : Number(e.target.value) })}
-          />
-        </label>
-
-        <ul className="tiles">
-          {here.map((item) => (
-            <li key={item.id}>
-              <button className="tile" onClick={() => { play('tick'); setOpenId(openId === item.id ? null : item.id); }}>
-                <span className="tile-name">{item.name}</span>
-                <span className="badge">{item.qty}</span>
-                {item.category && <span className="tile-cat">{item.category}</span>}
-              </button>
-              {openId === item.id && (
-                <div className="row wrap actions">
-                  <button onClick={() => update(item, { qty: Math.max(1, item.qty - 1) })}>−</button>
-                  <button onClick={() => update(item, { qty: item.qty + 1 })}>+</button>
-                  <select
-                    aria-label="Move to"
-                    value=""
-                    onChange={(e) => {
-                      const target = spaces.find((s) => s.id === e.target.value);
-                      if (target) {
-                        void repos.items.save(moveItem(item, target, Date.now()));
-                        void awardXp(XP.moveItem);
-                        play('confirm');
-                      }
-                    }}
-                  >
-                    <option value="">Move to…</option>
-                    {sortRooms(rooms).map((r) => (
-                      <optgroup key={r.id} label={r.name}>
-                        {spaces.filter((s) => s.roomId === r.id && s.id !== space.id).map((s) => (
-                          <option key={s.id} value={s.id}>{s.name}</option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                  <button onClick={() => { void update(item, { status: 'missing', spaceId: null }); play('sneak'); }}>
-                    Bandit took it
-                  </button>
-                  <button className="danger" onClick={() => { void repos.items.remove(item.id); play('cancel'); }}>Delete</button>
-                </div>
-              )}
-            </li>
-          ))}
-          {!here.length && <li className="hint">Empty chest.</li>}
-        </ul>
-
-        <form className="add-form" onSubmit={add}>
-          <input className="full" aria-label="Item name" placeholder="Item name" value={name} onChange={(e) => setName(e.target.value)} />
-
-          {addingCategory ? (
-            <input
-              aria-label="New category"
-              placeholder="New category"
-              value={draftCategory}
-              autoFocus
-              onChange={(e) => setDraftCategory(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  void saveCategory();
-                }
-              }}
-            />
-          ) : (
-            <select
-              aria-label="Category"
-              value={category}
-              onChange={(e) => (e.target.value === NEW_CATEGORY ? setAddingCategory(true) : setCategory(e.target.value))}
+    <>
+      <Sheet title={space.name} onClose={close} footer={footer}>
+        <div className="space-meta">
+          <span className="hint">{layerNames}</span>
+          {capacity !== undefined && (
+            <div
+              className={`meter${overfull ? ' over' : ''}`}
+              role="meter"
+              aria-label="How full"
+              aria-valuemin={0}
+              aria-valuemax={capacity}
+              aria-valuenow={count}
             >
-              <option value="">No category</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-              <option value={NEW_CATEGORY}>+ New category…</option>
-            </select>
-          )}
-          <input aria-label="Quantity" type="number" inputMode="numeric" min={1} value={qty} onChange={(e) => setQty(Math.max(1, Number(e.target.value)))} />
-
-          {addingCategory && (
-            <div className="row full">
-              <button type="button" onClick={saveCategory}>Save category</button>
-              <button type="button" className="ghost" onClick={() => { setAddingCategory(false); setDraftCategory(''); }}>Cancel</button>
+              <div className="meter-fill" style={{ width: `${Math.min(100, (100 * count) / Math.max(capacity, 1))}%` }} />
             </div>
           )}
+          <span className={overfull ? 'error' : 'hint'}>{fullnessText(count, capacity)}</span>
+        </div>
 
-          <select className="full" aria-label="How often used" value={useFrequency} onChange={(e) => setUseFrequency(Number(e.target.value) as Item['useFrequency'])}>
-            <option value={1}>Rarely used</option>
-            <option value={2}>Sometimes</option>
-            <option value={3}>All the time</option>
-          </select>
-          <button type="submit" className="full primary">Add item</button>
-        </form>
-    </Sheet>
+        {here.length ? (
+          <ul className="tiles">
+            {here.map((item) => (
+              <li key={item.id}>
+                <button
+                  className={`tile${item.id === openId ? ' active' : ''}`}
+                  aria-haspopup="dialog"
+                  onClick={() => {
+                    play('tick');
+                    setOpenId(item.id);
+                  }}
+                >
+                  <span className="tile-name">{item.name}</span>
+                  <span className="tile-cat">{item.category || frequencyLabel(item.useFrequency)}</span>
+                  <span className="badge" aria-label={`Quantity ${item.qty}`}>
+                    {item.qty}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="hint">Nothing in here yet. Add the first item below.</p>
+        )}
+
+        <details className="settings">
+          <summary>Space settings</summary>
+          <div className="form-stack">
+            <div className="field">
+              <span className="field-label">Colour</span>
+              <Swatches value={space.color} onChange={(color) => void repos.spaces.save({ ...space, color })} label={`${space.name} colour`} />
+            </div>
+            <div className="field">
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={capacity !== undefined}
+                  onChange={(e) => setCapacity(e.target.checked ? Math.max(count, 1) : undefined)}
+                />
+                Limit how many kinds of item it holds
+              </label>
+              {capacity !== undefined && (
+                <div className="row wrap">
+                  <span>Holds up to</span>
+                  <Stepper value={capacity} min={1} max={99} onChange={setCapacity} label="Capacity" />
+                  <span>{capacity === 1 ? 'kind of item' : 'kinds of item'}</span>
+                </div>
+              )}
+              <span className="hint">Counts different items, not quantities: 5 rolls of tape count as one.</span>
+            </div>
+          </div>
+        </details>
+      </Sheet>
+
+      {openItem && <ItemActions key={openItem.id} item={openItem} rooms={rooms} spaces={spaces} onClose={() => setOpenId(null)} />}
+    </>
   );
 }

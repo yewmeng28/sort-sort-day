@@ -69,6 +69,48 @@ export const ChevronDownIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const GearIcon = (props: IconProps) => (
+  <Icon {...props}>
+    {/* A cog: eight rounded teeth around a hub. */}
+    <path d="M10.3 2.5h3.4l.5 2.4 1.6.7 2.1-1.4 2.4 2.4-1.4 2.1.7 1.6 2.4.5v3.4l-2.4.5-.7 1.6 1.4 2.1-2.4 2.4-2.1-1.4-1.6.7-.5 2.4h-3.4l-.5-2.4-1.6-.7-2.1 1.4-2.4-2.4 1.4-2.1-.7-1.6-2.4-.5v-3.4l2.4-.5.7-1.6-1.4-2.1 2.4-2.4 2.1 1.4 1.6-.7Z" />
+    <circle cx="12" cy="12" r="3" />
+  </Icon>
+);
+
+export const FlameIcon = (props: IconProps) => (
+  <Icon stroke="none" fill="currentColor" {...props}>
+    <path d="M12.5 2.5c.6 3-1.3 4.6-2.8 6.3C8.3 10.4 7 12 7 14.5A5 5 0 0 0 12 19.5a5 5 0 0 0 5-5c0-2.2-1-3.6-1.9-4.7-.2 1.4-.9 2.4-1.9 2.9.3-3.4-.5-7.3-2.7-10.2Z" />
+  </Icon>
+);
+
+/** Quest kinds: gather a category, relieve an overfull space, bring something within reach, move between rooms. */
+export const GatherIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z" />
+    <path d="M9 4l3 3 3-3" />
+  </Icon>
+);
+
+export const OverfullIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="4" y="9" width="16" height="11" rx="1" />
+    <path d="M8 9V6h8v3M12 3v3" />
+  </Icon>
+);
+
+export const ReachIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 4v13M6 11l6 6 6-6M5 21h14" />
+  </Icon>
+);
+
+export const RoomsIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 11 12 4l9 7v9H3Z" />
+    <path d="M9 20v-6h6v6" />
+  </Icon>
+);
+
 export const StarIcon = (props: IconProps) => (
   <Icon stroke="none" fill="currentColor" {...props}>
     <path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9Z" />

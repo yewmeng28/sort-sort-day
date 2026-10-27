@@ -8,13 +8,18 @@ interface Props {
   title: ReactNode;
   onClose: () => void;
   children: ReactNode;
+  /** Pinned below the scrolling body, e.g. an "Add item" field. */
+  footer?: ReactNode;
 }
+
+/** Open sheets, newest last, so Escape closes only the one on top when sheets stack. */
+const openSheets: object[] = [];
 
 /**
  * Bottom sheet. Closes with the ✕ button, Escape, a tap on the dimmed backdrop, or dragging the handle or header down.
  * The header stays put while the body scrolls.
  */
-export function Sheet({ title, onClose, children }: Props) {
+export function Sheet({ title, onClose, children, footer }: Props) {
   const titleId = useId();
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef(onClose);
@@ -32,11 +37,14 @@ export function Sheet({ title, onClose, children }: Props) {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     panelRef.current?.focus();
+    const token = {};
+    openSheets.push(token);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeRef.current();
+      if (e.key === 'Escape' && openSheets[openSheets.length - 1] === token) closeRef.current();
     };
     document.addEventListener('keydown', onKey);
     return () => {
+      openSheets.splice(openSheets.indexOf(token), 1);
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus?.();
@@ -92,6 +100,7 @@ export function Sheet({ title, onClose, children }: Props) {
           </button>
         </header>
         <div className="sheet-body">{children}</div>
+        {footer && <div className="sheet-footer">{footer}</div>}
       </section>
     </div>
   );

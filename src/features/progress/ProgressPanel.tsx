@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useProgress, useRepos } from '../../data/RepoContext';
+import { useProgress } from '../../data/RepoContext';
 import { DEFAULT_PROGRESS, effectiveStreak, levelProgress, localDay } from '../../domain/progress';
 import { plural } from '../../domain/text';
+import { FlameIcon } from '../../ui/icons';
 
 interface Props {
   score: { percent: number; misplaced: number; total: number };
@@ -17,22 +17,10 @@ function Bar({ percent, label, marker }: { percent: number; label: string; marke
 }
 
 export function ProgressPanel({ score }: Props) {
-  const repos = useRepos();
   const progress = useProgress() ?? DEFAULT_PROGRESS;
   const { level, title, into, needed } = levelProgress(progress.xp);
   const streak = effectiveStreak(progress, localDay());
   const metGoalToday = progress.lastGoodDay === localDay();
-
-  // Edit a draft and only save on blur/Enter: saving per keystroke would briefly set e.g. 9% while typing 90,
-  // which could count today towards the streak by accident.
-  const [draft, setDraft] = useState<string | null>(null);
-  const commitThreshold = () => {
-    const value = Number(draft);
-    setDraft(null);
-    if (draft === null || draft.trim() === '' || !Number.isFinite(value)) return;
-    const threshold = Math.min(100, Math.max(1, Math.round(value)));
-    void repos.progress.update((p) => (p.threshold === threshold ? p : { ...p, threshold }));
-  };
 
   return (
     <div className="progress">
@@ -50,27 +38,15 @@ export function ProgressPanel({ score }: Props) {
       </p>
 
       <div className="row wrap">
-        <span>
-          Streak: <strong>{streak}</strong> {streak === 1 ? 'day' : 'days'} <span className="hint">(best {progress.bestStreak})</span>
-          {metGoalToday && <span className="hint"> · goal met today</span>}
+        <span className="streak">
+          <FlameIcon size={18} />
+          <span>
+            <strong>{streak}</strong>-day streak <span className="hint">(best {progress.bestStreak})</span>
+          </span>
         </span>
-        <label className="threshold">
-          Goal
-          <input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={100}
-            aria-label="Streak goal percent"
-            value={draft ?? progress.threshold}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commitThreshold}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') e.currentTarget.blur();
-            }}
-          />
-          %
-        </label>
+        <span className="hint">
+          Goal {progress.threshold}%{metGoalToday ? ' · met today' : ''}
+        </span>
       </div>
 
       <div className="row">

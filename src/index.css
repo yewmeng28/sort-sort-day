@@ -10,9 +10,11 @@
   --ink: #2a1d12;
   --ink-muted: #6a5640;
   --on-dark: #e9d9b4;
-  --on-dark-muted: #bfa87e;
+  --on-dark-muted: #c9b48c;
   /* accents and meaning */
   --gold: #d9a521;
+  /* Gold that stays readable as text and small icons on light parchment (contrast.test.ts checks it). */
+  --gold-text: #7d5a0f;
   --line: #8a6a3f;
   --danger: #a33a26;
   --success: #4c7a46;
@@ -365,3 +367,168 @@ html.standalone { touch-action: manipulation; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   button:active:not(:disabled) { transform: none; }
 }
+
+/* ---------- chest sheet ---------- */
+.sheet-footer {
+  flex: none;
+  padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--parchment);
+  max-height: 55vh;
+  overflow: auto;
+}
+.sheet:has(.sheet-footer) .sheet-body { padding-bottom: var(--space-3); }
+.space-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-2); }
+.meter { flex: 1; min-width: 90px; height: 10px; border-radius: 5px; background: var(--parchment-dark); border: 1px solid var(--line); overflow: hidden; }
+.meter-fill { height: 100%; background: var(--success); }
+.meter.over .meter-fill { background: var(--danger); }
+.tile.active { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold); }
+/* Quantity sits bottom-right beside the short category line, so names get the full width. */
+.tile-cat { padding-right: 28px; }
+
+.quick-add { display: grid; gap: var(--space-3); }
+.quick-add-row { display: flex; gap: var(--space-2); }
+.quick-add-row input { min-height: 48px; font-size: var(--text-m); }
+.quick-add-row button { min-height: 48px; }
+.quick-add-more { display: grid; gap: var(--space-3); justify-items: start; }
+.quick-add-split { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-5); }
+
+.settings { margin-top: var(--space-4); border-top: 1px solid var(--line); padding-top: var(--space-2); }
+.settings summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; justify-content: space-between; list-style: none; }
+.settings summary::-webkit-details-marker { display: none; }
+.settings summary::after { content: '▾'; color: var(--ink-muted); transition: transform 0.2s ease; }
+.settings[open] summary::after { transform: rotate(180deg); }
+.settings[open] summary { margin-bottom: var(--space-2); }
+.check { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; }
+.check input { min-height: 0; width: 22px; height: 22px; flex: none; accent-color: var(--leather-light); }
+
+/* ---------- form building blocks ---------- */
+.form-stack { display: grid; gap: var(--space-4); }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field-label { font-size: var(--text-s); font-weight: 600; color: var(--ink-muted); }
+.field > input, .field > select { width: 100%; min-height: 48px; font-size: var(--text-m); }
+/* Compact controls keep their natural width instead of stretching across the sheet. */
+.field > .stepper, .field > .segmented { justify-self: start; }
+
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--parchment-raised); }
+.stepper button { border: 0; border-radius: 0; font-size: 1.3rem; }
+.stepper output { min-width: 2.5ch; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.segmented { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: var(--radius-s); overflow: hidden; }
+.segmented button { border: 0; border-radius: 0; border-right: 1px solid var(--line); }
+.segmented button:last-child { border-right: 0; }
+.segmented button[aria-checked='true'] { background: var(--leather-light); color: var(--on-dark); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-btn { min-height: 36px; padding: 0 12px; border-radius: 999px; background: var(--parchment-raised); }
+.chip-btn[aria-checked='true'] { background: var(--leather-light); color: var(--on-dark); border-color: var(--gold); }
+.chip-btn.ghost { border: 1px dashed var(--line); color: var(--ink-muted); }
+.chip-new { display: inline-flex; gap: 6px; }
+.chip-new input { min-height: 36px; width: 9rem; flex: none; }
+.chip-new button { min-height: 36px; }
+
+/* ---------- app bar extras ---------- */
+.xp-chip {
+  flex: none;
+  min-height: 36px;
+  padding: 0 10px;
+  gap: 4px;
+  border-radius: 999px;
+  border-color: var(--gold);
+  color: var(--gold);
+  font-size: var(--text-s);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.icon-btn.on-dark { color: var(--on-dark); }
+
+/* ---------- search ---------- */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--parchment-raised);
+  color: var(--ink-muted);
+}
+.search-box input { flex: 1; border: 0; background: transparent; min-height: 46px; padding: 0; font-size: var(--text-m); outline: none; }
+.search-box:focus-within { outline: 3px solid var(--gold); outline-offset: 1px; }
+.result { display: flex; align-items: center; gap: var(--space-1); }
+.result .list-row { flex: 1; min-width: 0; }
+.list-row.static { cursor: default; border: 1px dashed var(--line); }
+.list-row svg { flex: none; color: var(--ink-muted); }
+.qty { font-weight: 400; color: var(--ink-muted); }
+.found-select { flex: none; max-width: 46%; }
+
+/* ---------- den ---------- */
+.den-card { display: grid; gap: var(--space-2); padding: var(--space-3); border: 1px dashed var(--line); border-radius: var(--radius-s); background: var(--parchment-raised); }
+.den-card .found-select { flex: 1; max-width: none; }
+button.ghost.danger { border-color: transparent; color: var(--danger); }
+
+/* ---------- settings ---------- */
+.settings-section { display: grid; gap: var(--space-2); }
+.settings-section h3 { margin: 0; }
+.settings-row { display: flex; align-items: center; gap: var(--space-1); padding: 6px 0; border-bottom: 1px solid rgba(138, 106, 63, 0.3); }
+.settings-row .list-main { flex: 1; }
+.about { display: flex; align-items: center; gap: var(--space-3); grid-template-columns: none; }
+
+/* ---------- rooms ---------- */
+.room-row { display: flex; align-items: center; gap: var(--space-1); }
+.room-row .list-row { flex: 1; min-width: 0; }
+.room-pick.active { border-color: var(--gold); border-width: 2px; }
+.star { color: var(--ink-muted); }
+.star.on { color: var(--gold-text); }
+.add-room { width: 100%; margin-top: var(--space-4); }
+.room-size { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3) var(--space-4); }
+.room-preview { display: block; }
+.preview-cell { fill: var(--parchment-raised); stroke: var(--line); stroke-width: 1; }
+.preview-cell.outside { fill: var(--danger); stroke: var(--danger); }
+.layer-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.layer-row { display: flex; align-items: center; gap: var(--space-1); }
+.layer-row input { min-height: 44px; }
+.add-layer { justify-self: start; }
+
+/* ---------- quests ---------- */
+.quest-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--parchment-raised);
+}
+.quest-card.skipped { opacity: 0.7; grid-template-columns: auto 1fr auto; align-items: center; }
+.quest-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--leather-light); color: var(--gold); }
+.quest-text { display: grid; gap: 2px; min-width: 0; align-self: center; }
+.quest-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--space-2); justify-content: flex-end; }
+.quest-actions .xp { margin-right: auto; font-weight: 700; color: var(--gold-text); font-variant-numeric: tabular-nums; }
+.streak { display: inline-flex; align-items: center; gap: 6px; }
+.streak svg { color: var(--gold-text); }
+
+/* ---------- level up ---------- */
+.level-up { display: grid; justify-items: center; gap: var(--space-3); text-align: center; padding: var(--space-3) 0 var(--space-5); }
+.level-up p { margin: 0; }
+
+/* Visually hidden but still reachable by keyboard and screen readers. */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.button:focus-within { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* the quest in progress */
+.quest-card.active { border: 2px solid var(--gold); background: var(--parchment-raised); box-shadow: 0 0 0 3px rgba(217, 165, 33, 0.25), 0 4px 14px rgba(0, 0, 0, 0.12); }
+.quest-card.active .quest-icon { background: var(--gold); color: var(--leather); }
+.quest-status { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-text); }
+
+/* items in a quest, and subquests once it's started */
+.quest-items { grid-column: 1 / -1; list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.item-chip { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--parchment); font-size: var(--text-s); font-weight: 600; }
+.subquests { grid-column: 1 / -1; list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.subquest { display: flex; align-items: center; gap: var(--space-2); padding: 6px 6px 6px var(--space-3); border: 1px dashed var(--line); border-radius: var(--radius-s); background: var(--parchment); }
+.subquest .list-main { flex: 1; }
+
+/* Keep the reward on one line; buttons wrap below it when a started quest's labels are long. */
+.quest-actions { flex-wrap: wrap; }
+.quest-actions .xp { white-space: nowrap; }

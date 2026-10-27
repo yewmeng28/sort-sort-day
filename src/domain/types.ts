@@ -71,7 +71,10 @@ export interface Suggestion {
   /** Stable across runs so a cancelled quest stays cancelled. */
   id: string;
   kind: 'consolidate' | 'overfull' | 'accessibility' | 'room';
+  /** What to do, e.g. "Move Socks to Wardrobe". */
   message: string;
+  /** Why it helps, e.g. "Keeps your Clothes together". */
+  reason: string;
   itemIds: string[];
   toSpaceId: string;
 }

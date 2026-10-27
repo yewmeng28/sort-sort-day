@@ -150,7 +150,7 @@ describe('streaks', () => {
 });
 
 describe('packingScore', () => {
-  const quest = (id: string, itemIds: string[]): Suggestion => ({ id, kind: 'consolidate', message: '', itemIds, toSpaceId: 's' });
+  const quest = (id: string, itemIds: string[]): Suggestion => ({ id, kind: 'consolidate', message: '', reason: '', itemIds, toSpaceId: 's' });
 
   it('counts lost items and items in open quests, never rounding up to 100', () => {
     const items = [item('a', 's'), item('b', 's'), item('c', null, { status: 'missing' }), item('d', 's')];

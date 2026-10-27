@@ -1,6 +1,17 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useDismissals, useItems, useProgress, useRepos, useRooms, useSpaces } from './data/RepoContext';
-import { allQuests, localDay, packingScore, recordDay } from './domain/progress';
+import {
+  allQuests,
+  effectiveStreak,
+  levelFromXp,
+  levelProgress,
+  localDay,
+  packingScore,
+  recordDay,
+  xpForLevel,
+} from './domain/progress';
+import { SettingsSheet } from './features/settings/SettingsSheet';
+import { Sheet } from './ui/Sheet';
 import { Mascot } from './app/Mascot';
 import { play } from './app/sound';
 import { DenTab } from './features/den/DenTab';
@@ -11,7 +22,7 @@ import { RoomsSheet } from './features/rooms/RoomsSheet';
 import { SearchTab } from './features/search/SearchTab';
 import { DEFAULT_LAYERS, sortRooms } from './domain/rooms';
 import type { Room } from './domain/types';
-import { ChevronDownIcon, DenIcon, MapIcon, QuestIcon, SearchIcon, StarIcon } from './ui/icons';
+import { ChevronDownIcon, DenIcon, FlameIcon, GearIcon, MapIcon, QuestIcon, SearchIcon, StarIcon } from './ui/icons';
 
 type Tab = 'map' | 'search' | 'quests' | 'den';
 
@@ -48,10 +59,25 @@ export default function App() {
   const spaces = useSpaces();
   const items = useItems();
   const dismissed = useDismissals();
-  const threshold = useProgress()?.threshold;
+  const progress = useProgress();
+  const threshold = progress?.threshold;
   const [tab, setTab] = useState<Tab>('map');
   const [roomId, setRoomId] = useState<string | null>(readRoomId);
   const [roomsOpen, setRoomsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Celebrate when XP crosses into a new level (not on first load).
+  const level = progress ? levelFromXp(progress.xp) : null;
+  const lastLevel = useRef<number | null>(null);
+  const [levelUp, setLevelUp] = useState<number | null>(null);
+  useEffect(() => {
+    if (level === null) return;
+    if (lastLevel.current !== null && level > lastLevel.current) {
+      setLevelUp(level);
+      play('chest');
+    }
+    lastLevel.current = level;
+  }, [level]);
   const [openSpaceId, setOpenSpaceId] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
@@ -99,6 +125,7 @@ export default function App() {
   const roomItems = items.filter((i) => i.roomId === room.id);
   const openSpace = spaces.find((s) => s.id === openSpaceId);
   const missing = items.filter((i) => i.status === 'missing' || !i.spaceId).length;
+  const streak = progress ? effectiveStreak(progress, localDay()) : 0;
   const badges: Partial<Record<Tab, { count: number; label: string; alert?: boolean }>> = {
     quests: { count: progressView?.openQuests ?? 0, label: 'open' },
     den: { count: missing, label: 'missing', alert: true },
@@ -123,6 +150,30 @@ export default function App() {
             <ChevronDownIcon size={20} />
           </button>
         </h1>
+        {progress && (
+          <button
+            className="xp-chip"
+            aria-label={`Level ${level}, ${streak}-day streak. Open quests`}
+            onClick={() => {
+              play('tick');
+              setTab('quests');
+            }}
+          >
+            <span>Lv {level}</span>
+            <FlameIcon size={15} />
+            <span>{streak}</span>
+          </button>
+        )}
+        <button
+          className="icon-btn ghost on-dark"
+          aria-label="Settings"
+          onClick={() => {
+            play('tick');
+            setSettingsOpen(true);
+          }}
+        >
+          <GearIcon />
+        </button>
       </header>
 
       <main>
@@ -173,6 +224,23 @@ export default function App() {
           onSelect={selectRoom}
           onClose={() => setRoomsOpen(false)}
         />
+      )}
+
+      {settingsOpen && <SettingsSheet onClose={() => setSettingsOpen(false)} />}
+
+      {levelUp !== null && (
+        <Sheet title="Level up!" onClose={() => setLevelUp(null)}>
+          <div className="level-up">
+            <Mascot size={96} />
+            <p className="stat">Level {levelUp}</p>
+            <p>
+              You're now a <b>{levelProgress(xpForLevel(levelUp)).title}</b>. Bandit is mildly impressed.
+            </p>
+            <button className="primary" onClick={() => setLevelUp(null)}>
+              Nice
+            </button>
+          </div>
+        </Sheet>
       )}
 
       <nav className="bottom-nav" aria-label="Sections">

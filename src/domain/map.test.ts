@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { labelColours, luminance, SPACE_COLOURS } from './colour';
 import { cellsInRect } from './grid';
+import { frequencyLabel, fullnessText } from './items';
 import { layoutLabel } from './label';
 import { deleteSpaceChanges, dragCells, fullness, NO_SELECTION, tapCell } from './spaces';
 import type { Item, Space } from './types';
@@ -90,6 +91,19 @@ describe('fullness', () => {
     const items = [item('a', 'd'), item('b', 'd'), item('c', 'd'), item('lost', 'd', { status: 'missing' })];
     expect(fullness(drawers, items)).toEqual({ count: 3, capacity: 2, overfull: true });
     expect(fullness(space('e', []), items)).toEqual({ count: 0, capacity: undefined, overfull: false });
+  });
+});
+
+describe('item text', () => {
+  it('describes fullness with and without a limit', () => {
+    expect(fullnessText(5, 4)).toBe('5 of 4 · overfull');
+    expect(fullnessText(3, 6)).toBe('3 of 6');
+    expect(fullnessText(1, undefined)).toBe('1 item');
+    expect(fullnessText(0, undefined)).toBe('0 items');
+  });
+
+  it('names how often an item is used', () => {
+    expect([1, 2, 3].map((f) => frequencyLabel(f as 1 | 2 | 3))).toEqual(['Rarely', 'Sometimes', 'Often']);
   });
 });
 

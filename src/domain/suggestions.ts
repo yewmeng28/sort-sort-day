@@ -52,6 +52,7 @@ export function suggest(roomId: string, spaces: Space[], allItems: Item[], layer
       id: `consolidate:${roomId}:${category}`,
       kind: 'consolidate',
       message: `Gather ${plural(strays.length, `${categoryLabel(group)} item`)} into ${name(target)}`,
+      reason: `Keeps your ${categoryLabel(group)} together`,
       itemIds: strays.map((i) => i.id),
       toSpaceId: target,
     });
@@ -74,7 +75,8 @@ export function suggest(roomId: string, spaces: Space[], allItems: Item[], layer
     out.push({
       id: `overfull:${space.id}`,
       kind: 'overfull',
-      message: `${space.name} is overfull: move ${movers.map((i) => i.name).join(', ')} to ${target.name}`,
+      message: `Move ${movers.map((i) => i.name).join(', ')} to ${target.name}`,
+      reason: `${space.name} is over its limit`,
       itemIds: movers.map((i) => i.id),
       toSpaceId: target.id,
     });
@@ -93,7 +95,8 @@ export function suggest(roomId: string, spaces: Space[], allItems: Item[], layer
       out.push({
         id: `access:${item.id}`,
         kind: 'accessibility',
-        message: `${item.name} is used often but sits high up: move it to ${target.name}`,
+        message: `Move ${item.name} to ${target.name}`,
+        reason: 'You use it often, so keep it within reach',
         itemIds: [item.id],
         toSpaceId: target.id,
       });
@@ -136,6 +139,7 @@ export function suggestInterRoom(rooms: Room[], spaces: Space[], allItems: Item[
         id: `room:${category}:${roomId}`,
         kind: 'room',
         message: `Move ${plural(strays.length, `${categoryLabel(group)} item`)} from ${roomName(roomId)} to ${target.name} in ${roomName(homeRoomId)}`,
+        reason: `Most of your ${categoryLabel(group)} are in ${roomName(homeRoomId)}`,
         itemIds: strays.map((i) => i.id),
         toSpaceId: target.id,
       });
